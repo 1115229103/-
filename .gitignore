@@ -37,6 +37,8 @@ Desktop.ini
 
 # PUA Loop state (keep history, not state)
 .claude/pua-loop-history.jsonl
+.claude/scheduled_tasks.json
+.claude/scheduled_tasks.lock
 
 # Docker
 docker-compose.override.yml

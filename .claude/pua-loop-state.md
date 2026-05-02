@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 20
+## Current Iteration: 21
 
 ## Verify Command
 Both test suites must pass:
