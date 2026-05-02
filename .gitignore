@@ -1,0 +1,46 @@
+# PHP
+/vendor/
+/bootstrap/cache/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/storage/app/*
+.env
+.env.backup
+.phpunit.result.cache
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.egg
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# PUA Loop state (keep history, not state)
+.claude/pua-loop-history.jsonl
+
+# Docker
+docker-compose.override.yml
+
+# Build artifacts
+*.log
+*.tmp

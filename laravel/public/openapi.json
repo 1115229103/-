@@ -1,0 +1,728 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AIStory API",
+    "version": "1.0.0",
+    "description": "AIStory — BYOK AI video generation platform. Users bring their own API keys; the platform provides the workflow engine, model registry, and video composition pipeline."
+  },
+  "servers": [
+    { "url": "http://127.0.0.1:8000/api/v1", "description": "Local development" },
+    { "url": "https://api.aistory.com/v1", "description": "Production" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "avatar_url": { "type": "string", "nullable": true },
+          "role": { "type": "string", "enum": ["user", "admin", "super_admin"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ModelRegistry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "category": { "type": "string", "enum": ["llm","image_gen","consistency","image_enhance","image2video","video_enhance","tts","music","asr","moderation"] },
+          "model_name": { "type": "string" },
+          "display_name": { "type": "string" },
+          "provider": { "type": "string" },
+          "api_type": { "type": "string", "enum": ["openai","anthropic","gemini","kling","elevenlabs","stability","replicate","bfl","azure","custom"] },
+          "base_url": { "type": "string" },
+          "default_params": { "type": "object" },
+          "description": { "type": "string" },
+          "sort_order": { "type": "integer" },
+          "status": { "type": "string", "enum": ["active","inactive"] }
+        }
+      },
+      "UserModelConfig": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "model_registry_id": { "type": "integer" },
+          "category": { "type": "string" },
+          "stage": { "type": "string" },
+          "api_key_masked": { "type": "string", "description": "Masked API key (last 4 chars only)" },
+          "priority": { "type": "integer" },
+          "status": { "type": "string" },
+          "last_verified_at": { "type": "string", "format": "date-time", "nullable": true },
+          "model": { "$ref": "#/components/schemas/ModelRegistry" }
+        }
+      },
+      "Work": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "style": { "type": "string" },
+          "status": { "type": "string", "enum": ["draft","parsing","storyboarding","generating_images","generating_videos","compositing","completed","failed"] },
+          "pipeline_progress": { "type": "object", "nullable": true },
+          "resolution": { "type": "string" },
+          "aspect_ratio": { "type": "string" },
+          "total_duration_sec": { "type": "number", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Plan": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "price_monthly": { "type": "integer" },
+          "price_yearly": { "type": "integer" },
+          "features": { "type": "object" },
+          "resolution_limit": { "type": "string" },
+          "watermark_free": { "type": "boolean" },
+          "max_works": { "type": "integer" },
+          "max_storyboards": { "type": "integer" },
+          "max_characters": { "type": "integer" },
+          "storage_limit_gb": { "type": "integer" },
+          "max_duration_sec": { "type": "integer" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" },
+          "errors": { "type": "object", "nullable": true }
+        }
+      },
+      "RateLimitError": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "example": "Too Many Requests" },
+          "message": { "type": "string" },
+          "retry_after": { "type": "integer" }
+        }
+      }
+    },
+    "headers": {
+      "RateLimitHeaders": {
+        "X-RateLimit-Limit": {
+          "schema": { "type": "integer" },
+          "description": "Maximum requests allowed per window (auth: 120, guest: 30)"
+        },
+        "X-RateLimit-Remaining": {
+          "schema": { "type": "integer" },
+          "description": "Requests remaining in current window"
+        },
+        "Retry-After": {
+          "schema": { "type": "integer" },
+          "description": "Seconds until rate limit resets (429 responses only)"
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password", "password_confirmation"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 2, "maxLength": 64 },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 8 },
+                  "password_confirmation": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User registered", "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "user": { "$ref": "#/components/schemas/User" } } } } } },
+          "422": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login success", "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "user": { "$ref": "#/components/schemas/User" } } } } } },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Logged out" } }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Current user", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } }
+        }
+      }
+    },
+    "/models/categories": {
+      "get": {
+        "tags": ["Models"],
+        "summary": "List model categories with stage mapping",
+        "responses": {
+          "200": { "description": "Categories with pipeline stages" }
+        }
+      }
+    },
+    "/models": {
+      "get": {
+        "tags": ["Models"],
+        "summary": "List available models (public catalog)",
+        "parameters": [
+          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "Filter by category (llm|image_gen|...)" },
+          { "name": "stage", "in": "query", "schema": { "type": "string" }, "description": "Filter by pipeline stage" }
+        ],
+        "responses": {
+          "200": { "description": "Model list", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/ModelRegistry" } } } } } } }
+        }
+      }
+    },
+    "/user/model-configs": {
+      "get": {
+        "tags": ["User Model Configs"],
+        "summary": "Get current user model configurations",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User model configs (api_key masked)", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/UserModelConfig" } } } } } } }
+        }
+      },
+      "post": {
+        "tags": ["User Model Configs"],
+        "summary": "Add model configuration with API key",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["model_registry_id", "category", "stage", "api_key"],
+                "properties": {
+                  "model_registry_id": { "type": "integer" },
+                  "category": { "type": "string" },
+                  "stage": { "type": "string" },
+                  "api_key": { "type": "string" },
+                  "priority": { "type": "integer", "default": 0 },
+                  "custom_params": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Config saved (key encrypted)" },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+    "/user/model-configs/{id}": {
+      "put": {
+        "tags": ["User Model Configs"],
+        "summary": "Update model configuration",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "api_key": { "type": "string" },
+                  "priority": { "type": "integer" },
+                  "custom_params": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Config updated" } }
+      },
+      "delete": {
+        "tags": ["User Model Configs"],
+        "summary": "Delete model configuration",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Config deleted" } }
+      }
+    },
+    "/user/model-configs/{id}/verify": {
+      "post": {
+        "tags": ["User Model Configs"],
+        "summary": "Verify API key validity",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Key valid", "content": { "application/json": { "schema": { "type": "object", "properties": { "valid": { "type": "boolean" }, "message": { "type": "string" } } } } } },
+          "422": { "description": "Key invalid", "content": { "application/json": { "schema": { "type": "object", "properties": { "valid": { "type": "boolean", "example": false }, "error": { "type": "string" } } } } } }
+        }
+      }
+    },
+    "/works": {
+      "get": {
+        "tags": ["Works"],
+        "summary": "List user works",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated works list" }
+        }
+      },
+      "post": {
+        "tags": ["Works"],
+        "summary": "Create new work",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "script_content"],
+                "properties": {
+                  "title": { "type": "string", "maxLength": 256 },
+                  "script_content": { "type": "string", "maxLength": 50000 },
+                  "style": { "type": "string" },
+                  "aspect_ratio": { "type": "string", "enum": ["16:9","9:16","1:1","4:3"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Work created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Work" } } } },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+    "/works/{id}": {
+      "get": {
+        "tags": ["Works"],
+        "summary": "Get work detail",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Work detail with characters, scenes, storyboards" } }
+      },
+      "put": {
+        "tags": ["Works"],
+        "summary": "Update work",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "script_content": { "type": "string" },
+                  "style": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Work updated" } }
+      },
+      "delete": {
+        "tags": ["Works"],
+        "summary": "Delete work",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Work deleted" } }
+      }
+    },
+    "/works/{id}/pipeline/start": {
+      "post": {
+        "tags": ["Works"],
+        "summary": "Start AI pipeline execution",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "202": { "description": "Pipeline started", "content": { "application/json": { "schema": { "type": "object", "properties": { "pipeline_run_id": { "type": "string" }, "status": { "type": "string" } } } } } },
+          "400": { "description": "Missing model configs" }
+        }
+      }
+    },
+    "/works/{id}/pipeline/progress": {
+      "get": {
+        "tags": ["Works"],
+        "summary": "Get pipeline progress (poll or WebSocket)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Pipeline progress with per-stage status" }
+        }
+      }
+    },
+    "/plans": {
+      "get": {
+        "tags": ["Plans"],
+        "summary": "List subscription plans",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Plan list", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Plan" } } } } } } }
+        }
+      }
+    },
+    "/membership": {
+      "get": {
+        "tags": ["Plans"],
+        "summary": "Get current membership",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Current membership with plan info" } }
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": ["Plans"],
+        "summary": "Create payment order",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["plan_id", "payment_method"],
+                "properties": {
+                  "plan_id": { "type": "integer" },
+                  "payment_method": { "type": "string", "enum": ["wechat", "alipay", "stripe"] },
+                  "billing_cycle": { "type": "string", "enum": ["monthly", "yearly"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Order created", "content": { "application/json": { "schema": { "type": "object", "properties": { "order_no": { "type": "string" }, "amount_cny": { "type": "integer" }, "payment_url": { "type": "string" } } } } } }
+        }
+      }
+    },
+    "/admin/dashboard": {
+      "get": {
+        "tags": ["Admin - Dashboard"],
+        "summary": "Admin dashboard statistics",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Dashboard stats (users, works, revenue, model usage)" } }
+      }
+    },
+    "/admin/models": {
+      "get": {
+        "tags": ["Admin - Model Registry"],
+        "summary": "List all registered models",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "category", "in": "query", "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Model list" } }
+      },
+      "post": {
+        "tags": ["Admin - Model Registry"],
+        "summary": "Add model to registry",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["category", "model_name", "display_name", "provider", "api_type", "base_url"],
+                "properties": {
+                  "category": { "type": "string", "enum": ["llm","image_gen","consistency","image_enhance","image2video","video_enhance","tts","music","asr","moderation"] },
+                  "model_name": { "type": "string" },
+                  "display_name": { "type": "string" },
+                  "provider": { "type": "string" },
+                  "api_type": { "type": "string", "enum": ["openai","anthropic","gemini","kling","elevenlabs","stability","replicate","bfl","azure","custom"] },
+                  "base_url": { "type": "string" },
+                  "default_params": { "type": "object" },
+                  "required_fields": { "type": "object" },
+                  "description": { "type": "string" },
+                  "docs_url": { "type": "string" },
+                  "sort_order": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Model added" } }
+      }
+    },
+    "/admin/models/{id}": {
+      "put": {
+        "tags": ["Admin - Model Registry"],
+        "summary": "Update model",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Model updated" } }
+      },
+      "delete": {
+        "tags": ["Admin - Model Registry"],
+        "summary": "Delete model",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Model deleted" } }
+      }
+    },
+    "/admin/models/{id}/status": {
+      "put": {
+        "tags": ["Admin - Model Registry"],
+        "summary": "Toggle model active/inactive",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": { "status": { "type": "string", "enum": ["active", "inactive"] } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Status updated" } }
+      }
+    },
+    "/admin/models/sort": {
+      "put": {
+        "tags": ["Admin - Model Registry"],
+        "summary": "Reorder models",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": { "type": "array", "items": { "type": "integer" }, "description": "Ordered model IDs" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Sort order updated" } }
+      }
+    },
+    "/admin/pipeline-stages": {
+      "get": {
+        "tags": ["Admin - Pipeline"],
+        "summary": "List pipeline stages",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "12 pipeline stages" } }
+      }
+    },
+    "/admin/pipeline-stages/{stage}": {
+      "put": {
+        "tags": ["Admin - Pipeline"],
+        "summary": "Configure pipeline stage",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "stage", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "is_enabled": { "type": "boolean" },
+                  "is_required": { "type": "boolean" },
+                  "sort_order": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Stage updated" } }
+      }
+    },
+    "/admin/prompt-templates": {
+      "get": {
+        "tags": ["Admin - Prompts"],
+        "summary": "List prompt templates",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "stage", "in": "query", "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Prompt templates by stage" } }
+      }
+    },
+    "/admin/prompt-templates/{stage}": {
+      "put": {
+        "tags": ["Admin - Prompts"],
+        "summary": "Update prompt template",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "stage", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "system_prompt": { "type": "string" },
+                  "user_prompt_template": { "type": "string" },
+                  "output_format": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Template updated" } }
+      }
+    },
+    "/admin/visual-styles": {
+      "get": { "tags": ["Admin - Visual Styles"], "summary": "List visual styles", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Style list" } } },
+      "post": { "tags": ["Admin - Visual Styles"], "summary": "Create style", "security": [{ "bearerAuth": [] }], "responses": { "201": { "description": "Style created" } } }
+    },
+    "/admin/visual-styles/{id}": {
+      "get": { "tags": ["Admin - Visual Styles"], "summary": "Get style", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Style detail" } } },
+      "put": { "tags": ["Admin - Visual Styles"], "summary": "Update style", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Updated" } } },
+      "delete": { "tags": ["Admin - Visual Styles"], "summary": "Delete style", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Deleted" } } }
+    },
+    "/admin/voice-library": {
+      "get": { "tags": ["Admin - Voice Library"], "summary": "List voices", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Voice list" } } },
+      "post": { "tags": ["Admin - Voice Library"], "summary": "Add voice", "security": [{ "bearerAuth": [] }], "responses": { "201": { "description": "Voice added" } } }
+    },
+    "/admin/voice-library/{id}": {
+      "put": { "tags": ["Admin - Voice Library"], "summary": "Update voice", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Updated" } } },
+      "delete": { "tags": ["Admin - Voice Library"], "summary": "Delete voice", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Deleted" } } }
+    },
+    "/admin/action-templates": {
+      "get": { "tags": ["Admin - Action Templates"], "summary": "List action templates", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Action template list" } } },
+      "post": { "tags": ["Admin - Action Templates"], "summary": "Create action template", "security": [{ "bearerAuth": [] }], "responses": { "201": { "description": "Created" } } }
+    },
+    "/admin/action-templates/{id}": {
+      "put": { "tags": ["Admin - Action Templates"], "summary": "Update action template", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Updated" } } },
+      "delete": { "tags": ["Admin - Action Templates"], "summary": "Delete action template", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Deleted" } } }
+    },
+    "/admin/watermark-config": {
+      "get": { "tags": ["Admin - Watermark"], "summary": "Get watermark config", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Watermark settings" } } },
+      "put": { "tags": ["Admin - Watermark"], "summary": "Update watermark config", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Updated" } } }
+    },
+    "/admin/users": {
+      "get": { "tags": ["Admin - Users"], "summary": "List users", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "User list" } } }
+    },
+    "/admin/users/{id}": {
+      "get": { "tags": ["Admin - Users"], "summary": "Get user detail", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }], "responses": { "200": { "description": "User detail" } } }
+    },
+    "/admin/works": {
+      "get": { "tags": ["Admin - Works"], "summary": "List all works", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Works list" } } }
+    },
+    "/admin/works/{id}": {
+      "get": { "tags": ["Admin - Works"], "summary": "Get work detail", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Work detail" } } },
+      "delete": { "tags": ["Admin - Works"], "summary": "Delete work", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Deleted" } } }
+    },
+    "/admin/sensitive-words": {
+      "get": { "tags": ["Admin - Sensitive Words"], "summary": "List sensitive words", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Sensitive word list" } } },
+      "post": { "tags": ["Admin - Sensitive Words"], "summary": "Add sensitive word", "security": [{ "bearerAuth": [] }], "responses": { "201": { "description": "Added" } } }
+    },
+    "/admin/sensitive-words/{id}": {
+      "put": { "tags": ["Admin - Sensitive Words"], "summary": "Update sensitive word", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Updated" } } },
+      "delete": { "tags": ["Admin - Sensitive Words"], "summary": "Delete sensitive word", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Deleted" } } }
+    },
+    "/admin/banners": {
+      "get": { "tags": ["Admin - Banners"], "summary": "List banners", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Banner list" } } },
+      "post": { "tags": ["Admin - Banners"], "summary": "Create banner", "security": [{ "bearerAuth": [] }], "responses": { "201": { "description": "Created" } } }
+    },
+    "/admin/banners/{id}": {
+      "put": { "tags": ["Admin - Banners"], "summary": "Update banner", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Updated" } } },
+      "delete": { "tags": ["Admin - Banners"], "summary": "Delete banner", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Deleted" } } }
+    },
+    "/admin/templates": {
+      "get": { "tags": ["Admin - Templates"], "summary": "List content templates", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Template list" } } },
+      "post": { "tags": ["Admin - Templates"], "summary": "Create template", "security": [{ "bearerAuth": [] }], "responses": { "201": { "description": "Created" } } }
+    },
+    "/admin/templates/{id}": {
+      "put": { "tags": ["Admin - Templates"], "summary": "Update template", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Updated" } } },
+      "delete": { "tags": ["Admin - Templates"], "summary": "Delete template", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Deleted" } } }
+    },
+    "/admin/assets": {
+      "get": { "tags": ["Admin - Assets"], "summary": "List assets", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Asset list" } } },
+      "post": { "tags": ["Admin - Assets"], "summary": "Create asset", "security": [{ "bearerAuth": [] }], "responses": { "201": { "description": "Created" } } }
+    },
+    "/admin/assets/{id}": {
+      "put": { "tags": ["Admin - Assets"], "summary": "Update asset", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Updated" } } },
+      "delete": { "tags": ["Admin - Assets"], "summary": "Delete asset", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Deleted" } } }
+    },
+    "/admin/orders": {
+      "get": { "tags": ["Admin - Orders"], "summary": "List all orders", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Order list" } } }
+    },
+    "/admin/finance/report": {
+      "get": { "tags": ["Admin - Finance"], "summary": "Finance report", "security": [{ "bearerAuth": [] }], "parameters": [
+        { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } }
+      ], "responses": { "200": { "description": "Revenue report" } } }
+    },
+    "/admin/system/settings": {
+      "get": { "tags": ["Admin - System"], "summary": "Get all system settings", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Settings KV" } } },
+      "put": { "tags": ["Admin - System"], "summary": "Update system settings", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Settings updated" } } }
+    },
+    "/admin/system/operation-logs": {
+      "get": { "tags": ["Admin - System"], "summary": "List operation logs", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Operation log list" } } }
+    },
+    "/admin/system/backups": {
+      "get": { "tags": ["Admin - System"], "summary": "List backups", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Backup list" } } },
+      "post": { "tags": ["Admin - System"], "summary": "Create backup", "security": [{ "bearerAuth": [] }], "responses": { "201": { "description": "Backup created" } } }
+    }
+  },
+  "tags": [
+    { "name": "Auth", "description": "Registration, login, logout" },
+    { "name": "Models", "description": "AI model catalog (public)" },
+    { "name": "User Model Configs", "description": "User API key + model configuration" },
+    { "name": "Works", "description": "Video projects and pipeline execution" },
+    { "name": "Plans", "description": "Subscription plans, membership, orders" },
+    { "name": "Admin - Dashboard", "description": "Admin dashboard statistics" },
+    { "name": "Admin - Model Registry", "description": "Manage AI model registry" },
+    { "name": "Admin - Pipeline", "description": "Configure pipeline stages" },
+    { "name": "Admin - Prompts", "description": "Manage prompt templates" },
+    { "name": "Admin - Visual Styles", "description": "Manage visual style presets" },
+    { "name": "Admin - Voice Library", "description": "Manage TTS voice library" },
+    { "name": "Admin - Action Templates", "description": "Manage action/镜头 templates" },
+    { "name": "Admin - Watermark", "description": "Configure watermark settings" },
+    { "name": "Admin - Users", "description": "User management" },
+    { "name": "Admin - Works", "description": "Content moderation" },
+    { "name": "Admin - Sensitive Words", "description": "Sensitive word filter" },
+    { "name": "Admin - Banners", "description": "Homepage banner management" },
+    { "name": "Admin - Templates", "description": "Content template management" },
+    { "name": "Admin - Assets", "description": "BGM/SFX/image asset management" },
+    { "name": "Admin - Orders", "description": "Order management" },
+    { "name": "Admin - Finance", "description": "Revenue reports" },
+    { "name": "Admin - System", "description": "System settings, logs, backups" }
+  ]
+}

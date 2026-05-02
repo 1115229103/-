@@ -1,0 +1,14 @@
+<template>
+  <div><h2 class="pg-t">Prompt Templates</h2>
+    <div v-for="p in items" :key="p.id" class="card"><div class="card-hd"><span class="lbl">{{ p.stage }}</span><button @click="edit(p)" class="btn-sm">Edit</button></div><pre class="prev">{{ (p.system_prompt || '').substring(0, 200) }}...</pre></div>
+    <div v-if="editing" class="modal"><div class="modal-card"><h3>Edit: {{ editForm.stage }}</h3><label>System Prompt</label><textarea v-model="editForm.system_prompt" rows="6" class="txt"></textarea><label>User Template</label><textarea v-model="editForm.user_prompt_template" rows="6" class="txt"></textarea><div class="btns"><button @click="save" class="btn-p">Save</button><button @click="editing=false" class="btn-c">Cancel</button></div></div></div>
+  </div>
+</template>
+<script setup>
+import { ref, onMounted } from 'vue'; import client from '../api/client';
+const items = ref([]); const editing = ref(false); const editForm = ref({});
+onMounted(async () => { try { const r = await client.get('/prompt-templates'); items.value = r.data.data; } catch {} });
+const edit = (p) => { editForm.value = { ...p }; editing.value = true; };
+const save = async () => { try { await client.put(`/prompt-templates/${editForm.value.stage}`, editForm.value); editing.value = false; const r = await client.get('/prompt-templates'); items.value = r.data.data; } catch {} };
+</script>
+<style scoped>.pg-t { font-size:1.75rem; font-weight:700; margin-bottom:1.5rem; } .card { padding:1rem; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:.5rem; margin-bottom:.5rem; } .card-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; } .lbl { font-weight:600; } .prev { color:rgba(255,255,255,.4); font-size:.75rem; white-space:pre-wrap; } .btn-sm { padding:.25rem .75rem; border-radius:.35rem; border:1px solid rgba(255,255,255,.2); background:none; color:rgba(255,255,255,.7); cursor:pointer; font-size:.75rem; } .modal { position:fixed; inset:0; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; z-index:100; } .modal-card { background:#1e293b; padding:2rem; border-radius:1rem; width:100%; max-width:600px; max-height:80vh; overflow-y:auto; } h3 { margin-bottom:1rem; } label { display:block; margin:.75rem 0 .25rem; font-size:.8rem; color:rgba(255,255,255,.6); } .txt { width:100%; padding:.5rem; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:.35rem; color:#fff; font-size:.8rem; resize:vertical; } .btns { display:flex; gap:.5rem; margin-top:1rem; } .btn-p { padding:.5rem 1rem; background:#7c3aed; border:none; border-radius:.35rem; color:#fff; cursor:pointer; } .btn-c { padding:.5rem 1rem; background:rgba(255,255,255,.1); border:none; border-radius:.35rem; color:#fff; cursor:pointer; }</style>

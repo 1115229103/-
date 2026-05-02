@@ -1,0 +1,34 @@
+# Laravel
+/bootstrap/cache/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/storage/app/*
+/storage/debugbar/*
+.env
+.env.production
+
+# Dependencies
+/vendor
+node_modules
+
+# Frontend build outputs (rebuild on deploy)
+/public/user-app
+/public/admin
+/public/hot
+
+# IDE
+.idea
+.vscode
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+/tests/coverage
+
+# Deploy
+deploy/.env.production

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& 'D:\\\\xampp\\\\php\\\\php.exe' 'd:\\\\�칫\\\\manju\\\\laravel\\\\tests\\\\admin_api_smoke.php' 2>&1)",
+      "PowerShell(Get-Command git -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source; if \\(-not \\(Get-Command git -ErrorAction SilentlyContinue\\)\\) { Write-Output \"GIT_NOT_FOUND\" })",
+      "PowerShell(& 'D:\\\\xampp\\\\php\\\\php.exe' 'd:\\\\�칫\\\\manju\\\\laravel\\\\tests\\\\e2e.php' 2>&1)",
+      "PowerShell(& 'D:\\\\xampp\\\\php\\\\php.exe' 'd:\\\\�칫\\\\manju\\\\laravel\\\\tests\\\\api_smoke.php' 2>&1)"
+    ]
+  }
+}

@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # MySQL 8.0
+  mysql:
+    image: mysql:8.0
+    container_name: aistory-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: aistory
+      MYSQL_USER: aistory
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-aistory_secret}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # Redis 7
+  redis:
+    image: redis:7-alpine
+    container_name: aistory-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Laravel 11 (PHP 8.2)
+  laravel:
+    build:
+      context: ./laravel
+      dockerfile: ../docker/laravel.Dockerfile
+    container_name: aistory-laravel
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ../laravel:/var/www
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_HOST: mysql
+      DB_DATABASE: aistory
+      DB_USERNAME: aistory
+      DB_PASSWORD: ${MYSQL_PASSWORD:-aistory_secret}
+      REDIS_HOST: redis
+      FASTAPI_URL: http://fastapi:8001
+
+  # FastAPI (Python 3.12)
+  fastapi:
+    build:
+      context: ./fastapi
+      dockerfile: ../docker/fastapi.Dockerfile
+    container_name: aistory-fastapi
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ../fastapi:/app
+    ports:
+      - "8001:8001"
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      DB_HOST: mysql
+      DB_DATABASE: aistory
+      DB_USERNAME: aistory
+      DB_PASSWORD: ${MYSQL_PASSWORD:-aistory_secret}
+      REDIS_HOST: redis
+      MASTER_KEK: ${MASTER_KEK:-change-me-in-production-use-32-byte-key}
+
+volumes:
+  mysql_data:
+  redis_data:

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(\\(Get-Content \"d:\\\\办公\\\\manju\\\\AIStory PRD.md\"\\).Count)",
+      "WebSearch",
+      "PowerShell(& \"D:\\\\xampp\\\\php\\\\php.exe\" --version)",
+      "PowerShell(& \"D:\\\\xampp\\\\php\\\\php.exe\" -r \"echo 'PHP OK';\")",
+      "PowerShell(& 'D:\\\\xampp\\\\php\\\\php.exe' 'd:\\\\�칫\\\\manju\\\\laravel\\\\tests\\\\admin_api_smoke.php' 2>&1)",
+      "PowerShell(& 'D:\\\\xampp\\\\php\\\\php.exe' 'd:\\\\�칫\\\\manju\\\\laravel\\\\tests\\\\api_smoke.php' 2>&1)"
+    ]
+  }
+}
