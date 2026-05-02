@@ -315,15 +315,16 @@ usleep(200000);
 echo "\n━━━ SECTION 4: Seeded Data Integrity ━━━\n";
 
 test('Models endpoint returns all categories', function() use ($base) {
+    // One call to fetch all models, then verify each category has data
+    $r = api('GET', "{$base}/models");
+    if ($r['code'] === 429) return 'WARN';
+    if ($r['code'] !== 200) return "Code {$r['code']}";
+    $models = $r['body']['data'] ?? [];
     $cats = ['llm', 'image_gen', 'consistency', 'image_enhance', 'image2video', 'video_enhance', 'tts', 'music', 'asr', 'moderation'];
-    $failures = [];
-    foreach ($cats as $cat) {
-        $r = api('GET', "{$base}/models?category={$cat}");
-        if ($r['code'] === 429) return 'WARN'; // Rate limited
-        if ($r['code'] !== 200) { $failures[] = "{$cat}:{$r['code']}"; continue; }
-        if (count($r['body']['data'] ?? []) === 0) { $failures[] = "{$cat}:0"; }
-    }
-    return empty($failures) ? true : implode('; ', $failures);
+    $found = [];
+    foreach ($models as $m) { $found[$m['category']] = true; }
+    $missing = array_diff($cats, array_keys($found));
+    return empty($missing) ? true : 'Missing categories: ' . implode(', ', $missing);
 });
 
 test('Categories endpoint returns pipeline stages', function() use ($base) {
@@ -438,7 +439,7 @@ test('JSON content type on API', function() use ($base) {
 // ═══════════════════════════════════════════════════
 // SECTION 7: Response Format Consistency
 // ═══════════════════════════════════════════════════
-usleep(200000);
+usleep(3000000);
 echo "\n━━━ SECTION 7: Response Format Consistency ━━━\n";
 
 test('Register returns data.user + data.token', function() use ($base) {
