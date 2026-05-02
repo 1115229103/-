@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 21
+## Current Iteration: 22
 
 ## Verify Command
 Both test suites must pass:
@@ -18,10 +18,11 @@ Both test suites must pass:
 
 ## Oracle Rules
 1. ✅ Both test files must return exit code 0
-2. ✅ Frontend must be scaffolded and buildable
+2. ✅ Frontend must be scaffolded and buildable (admin 159.7KB + user 296.9KB)
 3. ✅ Queue worker config must exist
-4. ✅ Git repo must be initialized — commit b855bcd
+4. ✅ Git repo must be initialized — 6 commits, clean tree
 5. ✅ Rate limiting must be configured
 6. ✅ API docs must exist
+7. ✅ e2e.php (32 tests, exit 0, 0 WARNs — rate-limit resilient)
 
 ## Status: ALL ORACLE RULES SATISFIED — LOOP COMPLETE
