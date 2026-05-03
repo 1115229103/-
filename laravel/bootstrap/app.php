@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(HandleCors::class);
+        $middleware->trustProxies(at: '*');
         $middleware->alias([
             'admin'    => \App\Http\Middleware\AdminMiddleware::class,
             'throttle' => \App\Http\Middleware\RateLimitMiddleware::class,

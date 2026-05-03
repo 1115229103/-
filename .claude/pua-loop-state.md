@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 66
+## Current Iteration: 67
 
 ## Verify Command
 All five test suites must pass with 0 failures:
@@ -560,5 +560,47 @@ done before — all prior iterations worked on a live DB without testing rollbac
 - Security fuzz: 41 passed, 0 failed
 - **Total: 154 tests, 0 failures, 0 warnings**
 - **Deploy cycle: migrate:fresh --seed + all 4 caches — fully verified**
+
+## Status: ALL 7 ORACLE RULES SATISFIED — 154 TESTS GREEN, 0 WARNINGS
+
+## Iteration 67 — Production Readiness Audit (+3/-1 lines, 3 files)
+
+### Approach: Deployment surface audit — fundamentally different
+Audited the full deployment configuration surface: .env.example completeness,
+config-file-to-env consistency, .gitignore coverage, hardcoded values, debug
+artifacts, TODO debt, and proxy/HTTPS middleware. Previous iterations focused on
+code logic and tests — this targets the deployment operator's experience.
+
+### Findings
+1. **laravel/.env.example missing APP_KEY** — `config/app.php` references
+   `env('APP_KEY')` with no default; new devs copying .env.example without
+   generating a key get encryption errors. Production example had it, dev didn't.
+2. **No TrustProxies middleware** — without `trustProxies()`, `$request->ip()`
+   returns the proxy's IP behind Nginx/load balancer, breaking rate limiting;
+   `$request->isSecure()` returns false, breaking HTTPS URL generation.
+3. **Zero TODO/FIXME/HACK in 36+ PHP files + 21 Python files** — clean codebase.
+4. **Zero hardcoded URLs in app/** — only intentional 127.0.0.1 bypass in
+   RateLimitMiddleware (dev convenience).
+5. **Both .env files properly gitignored** — root .gitignore covers .env for all
+   subdirectories.
+6. **All 11 Laravel config files use env() with defaults** — no hardcoded secrets.
+7. **Two one-off debug scripts exist** (check_db.php, test_api.php) — already
+   gitignored in root .gitignore, harmless.
+
+### Changes
+- **laravel/.env.example** — added `APP_KEY=` (critical for onboarding)
+- **laravel/bootstrap/app.php** — added `$middleware->trustProxies(at: '*')`
+  so rate limiting and HTTPS detection work behind reverse proxy
+- **laravel/deploy/.env.production.example** — verified complete (already had
+  APP_KEY, SESSION_DOMAIN)
+
+### Build & Test Results
+- API tests: 32 passed, 0 failed
+- Admin tests: 24 passed, 0 failed
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- Security fuzz: 41 passed, 0 failed
+- **Total: 154 tests, 0 failures, 0 warnings**
+- 74 commits, clean tree
 
 ## Status: ALL 7 ORACLE RULES SATISFIED — 154 TESTS GREEN, 0 WARNINGS
