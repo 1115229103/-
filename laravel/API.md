@@ -96,7 +96,6 @@ Header: `Authorization: Bearer <token>`
 |------|------|------|
 | current_password | string | 是 |
 | new_password | string | 是 (min:8) |
-| new_password_confirmation | string | 是 |
 
 ### PATCH /auth/me
 更新个人资料。支持部分更新。
