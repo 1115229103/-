@@ -14,6 +14,12 @@ class Kernel extends ConsoleKernel
 
         // Clean up failed pipeline works older than 7 days
         $schedule->command('works:cleanup-failed')->daily();
+
+        // Prune expired Sanctum tokens (default: >24h old)
+        $schedule->command('sanctum:prune-expired')->daily();
+
+        // Prune expired password reset tokens
+        $schedule->command('auth:clear-resets')->everyFifteenMinutes();
     }
 
     protected function commands(): void

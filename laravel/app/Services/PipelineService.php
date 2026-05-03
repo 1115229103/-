@@ -39,12 +39,19 @@ class PipelineService
             return ['status' => 'skipped'];
         }
 
-        // Find user's model config for this stage
+        // Find user's model config for this stage.
+        // First try exact stage match, then fall back to category-level config
+        // (the UI saves stage=category for simplicity; a category config
+        // covers all pipeline stages under that category).
         $config = UserModelConfig::where('user_id', $user->id)
             ->where('category', $pipelineStage->category)
-            ->where('stage', $stage)
+            ->where(function ($q) use ($stage, $pipelineStage) {
+                $q->where('stage', $stage)
+                  ->orWhere('stage', $pipelineStage->category);
+            })
             ->with('model')
             ->active()
+            ->orderByRaw("CASE WHEN stage = ? THEN 0 ELSE 1 END", [$stage])
             ->orderBy('priority')
             ->first();
 

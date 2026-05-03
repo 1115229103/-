@@ -37,8 +37,8 @@ class RateLimitMiddleware
             $windowStart = Cache::get($key . ':timer', time());
             $retryAfter = max(1, $ttl - (time() - (int)$windowStart));
             return response()->json([
-                'error'   => 'Too Many Requests',
-                'message' => "Rate limit exceeded. Try again in {$retryAfter} seconds.",
+                'error'   => 'rate_limit_exceeded',
+                'message' => "请求过于频繁，请在 {$retryAfter} 秒后重试",
             ], 429)->withHeaders([
                 'Retry-After'           => $retryAfter,
                 'X-RateLimit-Limit'     => $limit,

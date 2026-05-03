@@ -257,6 +257,8 @@ $resetToken = api('POST', "{$base}/auth/login", ['email' => $email, 'password' =
 if ($resetToken) {
     api('POST', "{$base}/auth/change-password", ['current_password' => 'NewPass456', 'new_password' => $password], $resetToken);
 }
+// Get a fresh token (login now deletes old tokens per user)
+$token = api('POST', "{$base}/auth/login", ['email' => $email, 'password' => $password])['body']['data']['token'] ?? '';
 
 echo "\n--- Auth Logout ---\n";
 test('POST /auth/logout', function() use ($base, $token) {

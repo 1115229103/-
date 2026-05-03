@@ -8,6 +8,7 @@ use App\Models\Plan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
@@ -86,11 +87,27 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Account-level brute force protection: 5 failed attempts = 15 min lockout
+        $lockKey = 'login_lockout:' . sha1($request->email);
+        $attempts = Cache::get($lockKey, 0);
+        if ($attempts >= 5) {
+            return response()->json([
+                'error'   => 'account_locked',
+                'message' => '登录尝试次数过多，请15分钟后再试',
+            ], 429);
+        }
+
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            Cache::put($lockKey, $attempts + 1, 900); // 15 min window, resets on each failure
             return response()->json(['error' => 'invalid_credentials', 'message' => '邮箱或密码错误'], 401);
         }
+
+        // Clear lockout on successful login
+        Cache::forget($lockKey);
+
+        $user->tokens()->delete();
 
         $token = $user->createToken('api-token')->plainTextToken;
 

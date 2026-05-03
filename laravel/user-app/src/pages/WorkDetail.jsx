@@ -63,7 +63,7 @@ export default function WorkDetail() {
       setWork((w) => ({ ...(w || {}), status: 'processing' }));
       setProgress({ status: 'processing', state: 'script_analysis', progress: 0 });
     } catch (err) {
-      setError(err.response?.data?.error || '启动失败');
+      setError(err.response?.data?.message || err.response?.data?.error || '启动失败');
     } finally {
       setStarting(false);
     }

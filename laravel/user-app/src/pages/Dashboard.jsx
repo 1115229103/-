@@ -20,7 +20,7 @@ export default function Dashboard() {
       api.get('/membership'),
     ]).then(([meRes, worksRes, memRes]) => {
       setUser(meRes.data.data);
-      setWorks(worksRes.data.data?.data || []);
+      setWorks(worksRes.data?.data || []);
       setMembership(memRes.data.data);
     }).catch(() => {
       setError('加载失败，请检查网络后刷新页面');

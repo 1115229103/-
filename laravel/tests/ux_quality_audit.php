@@ -66,6 +66,8 @@ pt('注册不泄露password', fn() => !isset($user['password']) ? true : 'passwo
 
 $login = api('POST', "{$base}/auth/login", ['email' => $email, 'password' => $password]);
 pt('登录返回200', fn() => $login['code'] === 200 ? true : "code={$login['code']}");
+// Login creates a new token and deletes old ones — use the new token
+$token = $login['body']['data']['token'] ?? $token;
 
 echo "\n━━━ PHASE 2: 中文错误信息 ━━━\n";
 

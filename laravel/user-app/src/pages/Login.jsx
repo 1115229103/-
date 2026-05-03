@@ -19,7 +19,7 @@ export default function Login() {
       localStorage.setItem('user', JSON.stringify(data.data.user));
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || '登录失败');
+      setError(err.response?.data?.message || err.response?.data?.error || '登录失败');
     } finally {
       setLoading(false);
     }

@@ -72,7 +72,7 @@ async function saveEdit(stage) {
     if (idx >= 0) templates.value[idx] = data.data;
     editing.value = null;
   } catch (e) {
-    alert('保存失败: ' + (e.response?.data?.errors ? Object.values(e.response.data.errors).flat().join('; ') : e.message));
+    alert('保存失败: ' + (e.response?.data?.errors ? Object.values(e.response.data.errors).flat().join('; ') : (e.response?.data?.message || e.message)));
   }
   saving.value = false;
 }

@@ -23,7 +23,7 @@ export default function Register() {
       if (err.response?.data?.errors) {
         setErrors(err.response.data.errors);
       } else {
-        setErrors({ general: err.response?.data?.error || '注册失败' });
+        setErrors({ general: err.response?.data?.message || err.response?.data?.error || '注册失败' });
       }
     } finally {
       setLoading(false);

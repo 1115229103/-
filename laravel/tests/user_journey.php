@@ -84,9 +84,10 @@ foreach ($requiredUserFields as $f) {
     }
 }
 
-// 1.4 Login (separate session)
+// 1.4 Login (separate session — creates new token, deletes old ones)
 [$code, $login] = req('POST', '/auth/login', ['email' => $email, 'password' => $password]);
 if ($code === 200 && isset($login['data']['token'])) {
+    $token = $login['data']['token']; // Use the new token (login deletes old tokens)
     pass('Login returns 200 + token');
 } else {
     fail("Login failed: HTTP {$code}");

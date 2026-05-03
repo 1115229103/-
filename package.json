@@ -1,0 +1,19 @@
+{
+  "name": "manju",
+  "version": "1.0.0",
+  "description": "自带 Key (Bring Your Own Key) 的一站式 AI 视频生成工作流引擎。平台提供模型注册和管道编排，用户自持 API Key，自由组合各环节 AI 模型。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright": "^1.59.1"
+  }
+}

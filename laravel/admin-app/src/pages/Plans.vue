@@ -87,7 +87,7 @@ async function savePlan() {
   } catch (e) {
     const msg = e.response?.data?.errors
       ? Object.values(e.response.data.errors).flat().join('; ')
-      : e.message;
+      : (e.response?.data?.message || e.message);
     alert('保存失败: ' + msg);
   }
   saving.value = false;

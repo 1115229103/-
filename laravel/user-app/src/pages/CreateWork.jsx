@@ -26,12 +26,17 @@ export default function CreateWork() {
         style,
         target_duration_sec: targetDuration,
       });
-      navigate(`/dashboard?created=${data.data?.id || ''}`);
+      const workId = data.data?.id;
+      if (workId) {
+        navigate(`/works/${workId}`);
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       if (err.response?.data?.errors) {
         setErrors(err.response.data.errors);
       } else {
-        setErrors({ general: err.response?.data?.error || '创建失败' });
+        setErrors({ general: err.response?.data?.message || err.response?.data?.error || '创建失败' });
       }
     } finally {
       setLoading(false);

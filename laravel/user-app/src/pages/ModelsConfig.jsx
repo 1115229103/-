@@ -64,7 +64,7 @@ export default function ModelsConfig() {
       setConfigs(data.data || []);
       setModal(null); setApiKey('');
     } catch (err) {
-      setError(err.response?.data?.errors?.api_key?.[0] || err.response?.data?.error || '保存失败');
+      setError(err.response?.data?.errors?.api_key?.[0] || err.response?.data?.message || err.response?.data?.error || '保存失败');
     } finally {
       setSaving(false);
     }
