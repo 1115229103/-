@@ -48,6 +48,7 @@ class ModelController extends Controller
                 'display_name'   => $m->display_name,
                 'provider'       => $m->provider,
                 'api_type'       => $m->api_type,
+                'status'         => $m->status,
                 'description'    => $m->description,
                 'docs_url'       => $m->docs_url,
                 'logo_url'       => $m->logo_url,
