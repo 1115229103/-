@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 83
+## Current Iteration: 84
 
 ## Verify Command
 All seven test suites must pass with 0 failures:
@@ -118,6 +118,31 @@ Also cross-audited all 24 controllers for N+1 queries (zero found).
 
 ### Verification
 - All 7 test suites: 207 PHP + 34 Python = 241/0/0 ✅
+
+## Iteration 84 — Frontend Error Handling Audit & Fix (+14/-4 lines, 3 files)
+
+### Approach: Frontend source code audit (never done before)
+Read every .jsx/.vue/.js file in both apps (108 source files total).
+Fundamentally different: previous iterations only touched backend/API/infra.
+
+### Frontend Audit Findings (108 files scanned)
+**Security**: Zero XSS (no innerHTML/dangerouslySetInnerHTML/v-html), zero hardcoded secrets ✅
+**Loading States**: Every page that fetches data has loading state ✅
+**console.log**: Zero left in production code ✅
+
+**4 Issues Fixed:**
+- **App.vue** (CRITICAL): `JSON.parse` on localStorage without try/catch → corrupted
+  value crashes entire admin app on load. Wrapped in defensive try/catch.
+- **ModelsConfig.jsx**: Silent error swallowing on models fetch — user sees empty
+  list with no feedback. Now shows error message on failure.
+- **WorkDetail.jsx**: Polling interruption silently freezes progress bar. Now shows
+  degraded-state message "进度轮询中断，请刷新页面".
+- Plan limits enforcement verified in WorkController (max_projects, max_duration_sec) ✅
+
+### Verification
+- Both frontends rebuild successfully (user-app 300KB, admin-app 194KB)
+- All 7 test suites: 241/0/0 ✅
+- 5-minute autonomous cron loop activated
 
 ## Oracle Rules
 1. ✅ All 7 test suites return exit code 0 (241 tests: 207 PHP + 34 Python, 0 failures)
