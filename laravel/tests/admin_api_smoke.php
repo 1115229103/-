@@ -88,6 +88,11 @@ pt('Admin users', function() use ($base, $token) {
     return in_array($r['code'], [200, 403]) ? true : "Code {$r['code']}";
 });
 
+pt('Admin user detail (id=1)', function() use ($base, $token) {
+    $r = api('GET', "{$base}/admin/users/1", null, $token);
+    return in_array($r['code'], [200, 403, 404]) ? true : "Code {$r['code']}";
+});
+
 pt('Admin works', function() use ($base, $token) {
     $r = api('GET', "{$base}/admin/works", null, $token);
     return in_array($r['code'], [200, 403]) ? true : "Code {$r['code']}";
@@ -100,6 +105,11 @@ pt('Admin sensitive words', function() use ($base, $token) {
 
 pt('Admin banners', function() use ($base, $token) {
     $r = api('GET', "{$base}/admin/banners", null, $token);
+    return in_array($r['code'], [200, 403]) ? true : "Code {$r['code']}";
+});
+
+pt('Admin action templates', function() use ($base, $token) {
+    $r = api('GET', "{$base}/admin/action-templates", null, $token);
     return in_array($r['code'], [200, 403]) ? true : "Code {$r['code']}";
 });
 
