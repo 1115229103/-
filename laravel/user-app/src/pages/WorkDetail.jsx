@@ -48,7 +48,10 @@ export default function WorkDetail() {
         const { data } = await api.get(`/works/${id}/pipeline/progress`);
         setProgress(data.data);
         if (++count >= maxPolls || data.data?.status !== 'processing') clearInterval(t);
-      } catch { clearInterval(t); }
+      } catch {
+        clearInterval(t);
+        setProgress((p) => ({ ...(p || {}), error: '进度轮询中断，请刷新页面' }));
+      }
     }, 3000);
     return () => clearInterval(t);
   }, [work?.status, id]);

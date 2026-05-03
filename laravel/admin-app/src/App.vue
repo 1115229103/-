@@ -3,7 +3,11 @@ import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
-const adminUser = JSON.parse(localStorage.getItem('admin_user') || 'null');
+
+let adminUser = null;
+try { adminUser = JSON.parse(localStorage.getItem('admin_user') || 'null'); } catch {
+  localStorage.removeItem('admin_user');
+}
 
 function logout() {
   localStorage.removeItem('admin_token');

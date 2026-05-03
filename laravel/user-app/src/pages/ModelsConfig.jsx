@@ -40,10 +40,13 @@ export default function ModelsConfig() {
   useEffect(() => {
     if (!selectedCat) return;
     setLoading(true);
+    setLoadError('');
     api.get(`/models?category=${selectedCat}`).then(({ data }) => {
       setModels(data.data || []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      setModels([]);
+      setLoadError('模型列表加载失败，请刷新页面重试');
+    }).finally(() => setLoading(false));
   }, [selectedCat]);
 
   const configured = (modelId) => configs.find((c) => c.model_registry_id === modelId);
