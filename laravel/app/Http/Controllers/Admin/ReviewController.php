@@ -16,7 +16,7 @@ class ReviewController extends Controller
             ->when($status !== 'all', fn($q) => $q->where('status', $status))
             ->latest()
             ->paginate(20);
-        return response()->json(['data' => $works]);
+        return response()->json($works);
     }
 
     public function approve(int $id): JsonResponse

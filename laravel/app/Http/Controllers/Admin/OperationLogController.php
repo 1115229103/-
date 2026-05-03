@@ -16,6 +16,6 @@ class OperationLogController extends Controller
             ->latest()
             ->paginate(20);
 
-        return response()->json(['data' => $logs]);
+        return response()->json($logs);
     }
 }

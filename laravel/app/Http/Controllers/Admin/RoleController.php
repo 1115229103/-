@@ -15,7 +15,7 @@ class RoleController extends Controller
             ->orderBy('role')
             ->orderBy('id')
             ->paginate(30);
-        return response()->json(['data' => $users]);
+        return response()->json($users);
     }
 
     public function update(Request $request, int $id): JsonResponse

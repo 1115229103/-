@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 67
+## Current Iteration: 68
 
 ## Verify Command
 All five test suites must pass with 0 failures:
@@ -603,4 +603,48 @@ code logic and tests — this targets the deployment operator's experience.
 - **Total: 154 tests, 0 failures, 0 warnings**
 - 74 commits, clean tree
 
-## Status: ALL 7 ORACLE RULES SATISFIED — 154 TESTS GREEN, 0 WARNINGS
+## Iteration 68 — Pagination Fix + UX Quality Audit (+49/-13 lines, 12 files)
+
+### Approach: Real human simulation — fundamentally different
+Wrote a 39-check UX Quality Audit simulating real user workflow (register→login→
+configure key→create work→check progress→admin ops→cleanup). All previous tests
+checked HTTP codes and basic structure — this checks actual response field names,
+Chinese error message quality, data consistency, pagination format, and API key
+masking format from a real user's perspective.
+
+### Bug Found: Pagination Metadata Nested Inside `data`
+All 7 paginated endpoints had the same structural bug: wrapping the Laravel
+Paginator in `['data' => $paginator]` caused pagination metadata (`links`,
+`meta`, `current_page`, etc.) to be nested inside `data.data`, making it
+inaccessible to standard API clients. Fixed by removing the `['data' => ...]`
+wrapper so the paginator serializes directly to `{data: [...], links: {...},
+meta: {...}}`.
+
+### API Response Field Reference (documented from live responses)
+- Models: `model_name`/`display_name`/`provider`/`status` (not `name`/`is_enabled`)
+- Plans: `price_monthly_cny`/`price_yearly_cny` (not `price`)
+- Categories: keyed object `{"llm": [...], "image_gen": [...], ...}`, not indexed
+- Model Configs: `model_registry_id`+`stage` required (not `model_id`)
+- API key masking: `api_key_masked` = `****xxxx` format
+
+### Changes
+- **WorkController.php (api+admin)** — paginator serialization fix (2 files)
+- **OrderController.php, UserController.php, OperationLogController.php,
+  ReviewController.php, RoleController.php** — same paginator fix (5 files)
+- **e2e.php** — updated `data.data` → `data` for work list check
+- **user_journey.php** — updated pagination format check
+- **ux_quality_audit.php** — NEW 39-check UX quality test suite
+
+### Build & Test Results
+- API tests: 32 passed, 0 failed
+- Admin tests: 24 passed, 0 failed
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- Security fuzz: 41 passed, 0 failed
+- UX quality audit: 39 passed, 0 failed **(NEW)**
+- **Total: 193 test assertions, 0 failures, 0 warnings**
+- Frontend: user 300KB + admin 194KB (vite v8.0.10)
+- Dependencies: 0 composer CVEs, 0 npm vulns
+- 75 commits, clean tree
+
+## Status: ALL 7 ORACLE RULES SATISFIED — 193 TESTS GREEN, 0 WARNINGS

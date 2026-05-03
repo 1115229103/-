@@ -240,7 +240,7 @@ test('Work lifecycle: create → read → update → verify → delete → verif
     // List contains it
     $list = api('GET', "{$base}/works", null, $sharedToken);
     $found = false;
-    foreach ($list['body']['data']['data'] ?? [] as $w) {
+    foreach ($list['body']['data'] ?? [] as $w) {
         if ($w['id'] === $id) { $found = true; break; }
     }
     if (!$found) return 'Work not found in list';

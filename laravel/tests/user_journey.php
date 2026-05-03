@@ -285,7 +285,7 @@ if ($code !== 200) {
 
     // 6.2 Admin views user list
     [$code, $users] = req('GET', '/admin/users', null, $adminToken);
-    if ($code === 200 && isset($users['data']['data'])) {
+    if ($code === 200 && isset($users['data'])) {
         pass('Admin users list returns paginated data');
     } else {
         fail("Admin users list: HTTP {$code} or wrong format");

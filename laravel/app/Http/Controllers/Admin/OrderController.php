@@ -10,6 +10,6 @@ class OrderController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(['data' => Order::with(['user', 'plan'])->latest()->paginate(20)]);
+        return response()->json(Order::with(['user', 'plan'])->latest()->paginate(20));
     }
 }

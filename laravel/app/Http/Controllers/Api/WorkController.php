@@ -20,7 +20,7 @@ class WorkController extends Controller
             ->orderBy('updated_at', 'desc')
             ->paginate(20);
 
-        return response()->json(['data' => $works]);
+        return response()->json($works);
     }
 
     /**

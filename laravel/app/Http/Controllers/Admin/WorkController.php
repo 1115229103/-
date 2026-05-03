@@ -10,7 +10,7 @@ class WorkController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(['data' => Work::with('user')->latest()->paginate(20)]);
+        return response()->json(Work::with('user')->latest()->paginate(20));
     }
 
     public function show(int $id): JsonResponse

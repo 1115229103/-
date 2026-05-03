@@ -10,7 +10,7 @@ class UserController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(['data' => User::with('membership.plan')->paginate(20)]);
+        return response()->json(User::with('membership.plan')->paginate(20));
     }
 
     public function show(int $id): JsonResponse
