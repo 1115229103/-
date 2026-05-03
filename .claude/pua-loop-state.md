@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 79
+## Current Iteration: 81
 
 ## Verify Command
 All six test suites must pass with 0 failures:
@@ -18,6 +18,51 @@ All six test suites must pass with 0 failures:
 - user_journey.php (24 tests, exit 0)
 - security_fuzz.php (41 tests, exit 0)
 - ux_quality_audit.php (39 tests, exit 0)
+
+## Iteration 80 — Unauthenticated Exception Handler Fix (+20 lines, 2 files)
+
+### Approach: Root-cause analysis of error response quality
+Found that unauthenticated API requests (curl without Accept header) returned
+full Symfony stack trace instead of JSON `{"error":"unauthenticated","message":"..."}`.
+Root cause: `Authenticate::unauthenticated()` checks `$request->expectsJson()` which
+requires `Accept: application/json` header. Without it, the middleware calls
+`redirectTo()` → `route('login')` → `RouteNotFoundException` with full trace
+BEFORE the exception handler's `shouldRenderJsonWhen` callback ever runs.
+
+### Changes
+- **ForceJsonResponse.php** — new middleware that sets `Accept: application/json`
+  on all API requests, prepended to `api` middleware group
+- **bootstrap/app.php** — added `$middleware->api(prepend: [ForceJsonResponse::class])`;
+  kept hardened `shouldRenderJsonWhen` with `str_starts_with($request->path(), 'api/')`
+  as defense-in-depth
+
+### Verification
+- curl without Accept header → `{"error":"unauthenticated","message":"Unauthenticated."}` ✅
+- curl with Accept header → same correct response ✅
+- All 6 test suites: 193/0/0 ✅
+
+## Iteration 81 — Operational Verification (no code changes)
+
+### Approach: 运营验证 — 文件存在 ≠ 功能可用
+Fundamentally different from previous code audits: actually BUILD, DISPATCH, CURL.
+Every claim of "done" verified with real execution, not file-existence checks.
+
+### Findings
+- **Frontend builds**: user-app (86 modules, 329KB) ✅ | admin-app (100 modules, 221KB) ✅
+- **Queue job execution**: Pipeline start→200, sync job dispatched, stage executed,
+  fails gracefully (no 500) → status=failed with error message. ✅
+- **Supervisor configs**: deploy/supervisor.conf (bare-metal 2 workers) ✅
+  docker/supervisor.conf (container 2 workers + nginx + php-fpm) ✅
+  Paths consistent: Docker WORKDIR=/var/www matches `php /var/www/artisan queue:work` ✅
+- **DB seed integrity**: 89 models across 10 categories (llm:16, image_gen:15, tts:12,
+  image2video:13, ...), 4 plans with nested `features` JSON (correct API design) ✅
+- **Docker compose**: 4 services (mysql, redis, laravel, fastapi), proper networking ✅
+- **Docker MySQL init**: Creates aistory DB + aistory user + utf8mb4 ✅
+
+### Verification
+- All 6 test suites: 193/0/0 ✅
+- Both services healthy (Laravel 200, FastAPI 200) ✅
+- Pipeline lifecycle: register→login→create work→start→execute→fail gracefully ✅
 
 ## Oracle Rules
 1. ✅ All 7 test suites return exit code 0 (227 tests: 193 PHP + 34 Python, 0 failures)
