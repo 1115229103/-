@@ -9,6 +9,7 @@ export default defineConfig({
       '/api': 'http://localhost:8000',
     },
   },
+  base: '/user-app/',
   build: {
     outDir: '../public/user-app',
     emptyOutDir: true,
