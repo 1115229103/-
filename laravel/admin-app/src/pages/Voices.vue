@@ -27,8 +27,8 @@ onMounted(async () => {
           <td>{{ v.id }}</td>
           <td>{{ v.name }}</td>
           <td>{{ v.provider }}</td>
-          <td style="font-family:var(--mono);font-size:0.8rem">{{ v.voice_id }}</td>
-          <td>{{ v.gender === 'male' ? '男' : v.gender === 'female' ? '女' : v.gender || '—' }}</td>
+          <td style="font-family:var(--mono);font-size:0.8rem">{{ v.provider_voice_id }}</td>
+          <td>{{ v.gender || '—' }}</td>
           <td>{{ v.language }}</td>
           <td>{{ v.style }}</td>
           <td><span class="badge" :class="v.status === 'active' ? 'success' : 'error'">{{ v.status === 'active' ? '启用' : '禁用' }}</span></td>

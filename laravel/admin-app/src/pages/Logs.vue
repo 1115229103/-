@@ -9,7 +9,7 @@ const loadError = ref('');
 onMounted(async () => {
   try {
     const { data } = await api.get('/admin/system/operation-logs');
-    logs.value = data.data || [];
+    logs.value = data.data?.data || data.data || [];
   } catch { logs.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
@@ -28,7 +28,7 @@ onMounted(async () => {
           <td>{{ l.user?.name || l.user_id || '—' }}</td>
           <td><span class="badge info">{{ l.action }}</span></td>
           <td>{{ l.target_type }}{{ l.target_id ? '#' + l.target_id : '' }}</td>
-          <td style="font-size:0.85rem;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.description || l.detail || '—' }}</td>
+          <td style="font-size:0.85rem;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.module }}:{{ l.action }}{{ l.target_id ? ' #' + l.target_id : '' }}</td>
           <td style="font-size:0.85rem">{{ l.created_at }}</td>
         </tr>
         <tr v-if="logs.length === 0">

@@ -9,7 +9,7 @@ const loadError = ref('');
 onMounted(async () => {
   try {
     const { data } = await api.get('/admin/works');
-    works.value = data.data || [];
+    works.value = data.data?.data || data.data || [];
   } catch { works.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });

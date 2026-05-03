@@ -22,7 +22,7 @@ function RedirectIfAuth({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/user-app">
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<RedirectIfAuth><Login /></RedirectIfAuth>} />

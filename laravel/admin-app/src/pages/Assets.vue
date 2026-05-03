@@ -28,7 +28,7 @@ onMounted(async () => {
           <td>{{ a.name }}</td>
           <td><span class="badge info">{{ a.type === 'bgm' ? 'BGM' : a.type === 'sfx' ? '音效' : a.type === 'image' ? '图片' : a.type || '—' }}</span></td>
           <td style="font-size:0.85rem">{{ a.tags || '—' }}</td>
-          <td>{{ a.file_size ? (a.file_size / 1024).toFixed(1) + ' KB' : '—' }}</td>
+          <td>{{ a.file_size_bytes ? (a.file_size_bytes / 1024).toFixed(1) + ' KB' : '—' }}</td>
           <td><span class="badge" :class="a.status === 'active' ? 'success' : 'error'">{{ a.status === 'active' ? '启用' : '禁用' }}</span></td>
         </tr>
         <tr v-if="assets.length === 0">

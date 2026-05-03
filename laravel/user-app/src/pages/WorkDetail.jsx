@@ -41,11 +41,13 @@ export default function WorkDetail() {
 
   useEffect(() => {
     if (!work || work.status !== 'processing') return;
+    let count = 0;
+    const maxPolls = 120;
     const t = setInterval(async () => {
       try {
         const { data } = await api.get(`/works/${id}/pipeline/progress`);
         setProgress(data.data);
-        if (data.data?.status !== 'processing') clearInterval(t);
+        if (++count >= maxPolls || data.data?.status !== 'processing') clearInterval(t);
       } catch { clearInterval(t); }
     }, 3000);
     return () => clearInterval(t);
@@ -55,7 +57,7 @@ export default function WorkDetail() {
     setStarting(true); setError('');
     try {
       await api.post(`/works/${id}/pipeline/start`);
-      setWork((w) => ({ ...w, status: 'processing' }));
+      setWork((w) => ({ ...(w || {}), status: 'processing' }));
       setProgress({ status: 'processing', state: 'script_analysis', progress: 0 });
     } catch (err) {
       setError(err.response?.data?.error || '启动失败');
@@ -75,6 +77,7 @@ export default function WorkDetail() {
   };
 
   if (loading) return <div className="dashboard"><main><p style={{color:'var(--text-muted)'}}>加载中...</p></main></div>;
+  if (!work) return <div className="dashboard"><main><p style={{color:'var(--error)',padding:'12px 0'}}>{error || '加载失败，请刷新页面'}</p><Link to="/dashboard" className="btn small">返回首页</Link></main></div>;
 
   const stageCount = Object.keys(STAGE_NAMES).length;
 

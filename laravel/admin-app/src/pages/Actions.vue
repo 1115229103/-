@@ -26,7 +26,7 @@ onMounted(async () => {
         <tr v-for="a in actions" :key="a.id">
           <td>{{ a.id }}</td>
           <td>{{ a.name }}</td>
-          <td><span class="badge info">{{ a.category === 'combat' ? '打斗' : a.category === 'magic' ? '魔法' : a.category === 'daily' ? '日常' : a.category === 'chase' ? '追逐' : a.category === 'emotion' ? '情感' : a.category === 'vfx' ? '特效' : a.category || '—' }}</span></td>
+          <td><span class="badge info">{{ a.category || '—' }}</span></td>
           <td style="font-size:0.85rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.prompt_cn || '—' }}</td>
           <td style="font-size:0.85rem">{{ a.tags ? (typeof a.tags === 'string' ? a.tags : JSON.stringify(a.tags)) : '—' }}</td>
           <td><span class="badge" :class="a.status === 'active' ? 'success' : 'error'">{{ a.status === 'active' ? '启用' : '禁用' }}</span></td>

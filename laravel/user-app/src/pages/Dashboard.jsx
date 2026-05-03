@@ -12,7 +12,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
-    if (stored) setUser(JSON.parse(stored));
+    if (stored) { try { setUser(JSON.parse(stored)); } catch { localStorage.removeItem('user'); } }
 
     Promise.all([
       api.get('/auth/me'),

@@ -208,6 +208,28 @@ test('GET /works (no token → 401)', function() use ($base) {
     return $r['code'] === 401 ? true : "Code {$r['code']} (expected 401)";
 });
 
+echo "\n--- Auth Password Change ---\n";
+test('POST /auth/change-password rejects wrong current password', function() use ($base, $token) {
+    $r = api('POST', "{$base}/auth/change-password", ['current_password' => 'wrong', 'new_password' => 'NewPass456'], $token);
+    return $r['code'] === 403 ? true : "Code {$r['code']} (expected 403)";
+});
+
+test('POST /auth/change-password with correct current password', function() use ($base, $token, $password) {
+    $r = api('POST', "{$base}/auth/change-password", ['current_password' => $password, 'new_password' => 'NewPass456'], $token);
+    return $r['code'] === 200 ? true : "Code {$r['code']} (expected 200)";
+});
+
+test('Login works with new password after change', function() use ($base, $email) {
+    $r = api('POST', "{$base}/auth/login", ['email' => $email, 'password' => 'NewPass456']);
+    return ($r['code'] === 200 && isset($r['body']['data']['token'])) ? true : "Code {$r['code']}";
+});
+
+// Reset password back for other tests
+$resetToken = api('POST', "{$base}/auth/login", ['email' => $email, 'password' => 'NewPass456'])['body']['data']['token'] ?? '';
+if ($resetToken) {
+    api('POST', "{$base}/auth/change-password", ['current_password' => 'NewPass456', 'new_password' => $password], $resetToken);
+}
+
 echo "\n--- Auth Logout ---\n";
 test('POST /auth/logout', function() use ($base, $token) {
     $r = api('POST', "{$base}/auth/logout", null, $token);

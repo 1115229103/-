@@ -27,7 +27,7 @@ onMounted(async () => {
           <td>{{ t.id }}</td>
           <td>{{ t.name }}</td>
           <td>{{ t.category || '—' }}</td>
-          <td style="font-size:0.85rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.description || '—' }}</td>
+          <td style="font-size:0.85rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.content || '—' }}</td>
           <td><span class="badge" :class="t.status === 'active' ? 'success' : 'error'">{{ t.status === 'active' ? '启用' : '禁用' }}</span></td>
           <td>{{ t.sort_order }}</td>
         </tr>

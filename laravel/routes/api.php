@@ -39,6 +39,7 @@ Route::middleware('throttle:120,1')->group(function () {
 Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::post('/auth/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
     Route::get('/auth/me', [\App\Http\Controllers\Api\AuthController::class, 'me']);
+    Route::post('/auth/change-password', [\App\Http\Controllers\Api\AuthController::class, 'changePassword']);
 
     Route::get('/user/model-configs', [ModelController::class, 'myConfigs']);
     Route::post('/user/model-configs', [ModelController::class, 'storeConfig']);

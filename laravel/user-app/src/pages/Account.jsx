@@ -78,11 +78,11 @@ export default function Account() {
               <div key={p.id} className="work-card">
                 <h3>{p.name}</h3>
                 <p style={{color:'var(--primary)',fontSize:'1.1rem',fontWeight:600,marginTop:4}}>
-                  ¥{Number(p.price_monthly || p.price_yearly/12 || 0).toFixed(0)}/月
+                  ¥{Number(p.price_monthly_cny || p.price_yearly_cny/12 || 0).toFixed(0)}/月
                 </p>
-                {p.price_yearly && (
+                {p.price_yearly_cny && (
                   <p style={{fontSize:'0.8rem',color:'var(--text-muted)'}}>
-                    ¥{Number(p.price_yearly).toFixed(0)}/年
+                    ¥{Number(p.price_yearly_cny).toFixed(0)}/年
                   </p>
                 )}
                 <button className="btn small secondary" style={{marginTop:8}} disabled>即将开放</button>
