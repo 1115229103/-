@@ -86,7 +86,9 @@ class ExportService
         $lines = [];
         foreach ($storyboards as $sb) {
             if ($sb->video_url && file_exists($sb->video_url)) {
-                $lines[] = "file '" . addslashes($sb->video_url) . "'";
+                // FFmpeg concat format: escape single quotes as '\'' (end quote, literal ', reopen)
+                $escapedPath = str_replace("'", "'\\''", $sb->video_url);
+                $lines[] = "file '" . $escapedPath . "'";
                 $lines[] = "duration " . $sb->duration_sec;
             }
         }

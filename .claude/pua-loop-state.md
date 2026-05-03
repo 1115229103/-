@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 62
+## Current Iteration: 63
 
 ## Verify Command
 All five test suites must pass with 0 failures:
@@ -411,6 +411,41 @@ show routes.
 
 ### Build & Test Results
 - OpenAPI spec: 73 paths, 96 endpoints (was ~74)
+- API tests: 32 passed, 0 failed
+- Admin tests: 22 passed, 0 failed
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- Security fuzz: 41 passed, 0 failed
+- **Total: 152 tests, 0 failures, 0 warnings**
+
+## Iteration 63 — FastAPI Code Audit + Security Consistency (+4/-3 lines, 2 files)
+
+### Approach: Python-side code audit + cross-service security consistency — fundamentally different
+All 62 previous iterations focused on Laravel/PHP. Audited the entire FastAPI
+Python codebase (21 .py files) for security, correctness, and dependency hygiene.
+Found 1 security consistency gap and 1 dead dependency.
+
+### Changes
+- **ExportService.php** — replaced `addslashes()` in `buildConcatFile()` with
+  proper FFmpeg concat file escaping (`str_replace("'", "'\\''", ...)`).
+  `addslashes()` was flagged HIGH in iter 47 but this instance was missed.
+  FFmpeg concat format uses `file 'path'` — single quotes must be escaped as
+  `'\''` not `\'` (which would be literal backslash to FFmpeg).
+- **fastapi/requirements.txt** — removed `celery==5.4.*` (unused dependency —
+  zero imports across all 21 Python files, no Celery tasks defined).
+
+### Audit Findings (no issues)
+- SSRF protection: `_BLOCKED_IP_PATTERNS` blocks 127/10/172.16/192.168/0.0.0.0/localhost/::1
+- Pydantic validators on both `StageRunRequest.base_url` and `KeyVerifyRequest.base_url`
+- Envelope encryption: AES-256-GCM via cryptography library, proper nonce handling
+- Key zeroing after use: `api_key = "\x00" * len(api_key)` in pipeline_service.py
+- Internal token auth on all 5 `/internal/*` endpoints
+- Startup lifespan validates MASTER_KEK + INTERNAL_API_TOKEN with weak-pattern detection
+- All 10 AI adapters (OpenAI/Anthropic/Gemini/Kling/ElevenLabs/Stability/Replicate/BFL/Azure/Custom) properly handle auth per API type
+- No TODOs/FIXMEs in FastAPI codebase
+- Laravel .env values (MASTER_KEK, INTERNAL_API_TOKEN) match FastAPI .env — consistent
+
+### Build & Test Results
 - API tests: 32 passed, 0 failed
 - Admin tests: 22 passed, 0 failed
 - E2E: 33 passed, 0 failed, 0 warnings
