@@ -30,7 +30,7 @@ onMounted(async () => {
           <td>{{ w.id }}</td>
           <td style="color:var(--error)">{{ w.word }}</td>
           <td>{{ w.category || '—' }}</td>
-          <td>{{ w.level || '—' }}</td>
+          <td>{{ w.severity || '—' }}</td>
           <td><span class="badge" :class="w.status === 'active' ? 'success' : 'error'">{{ w.status === 'active' ? '启用' : '禁用' }}</span></td>
           <td>{{ w.created_at?.substring(0, 10) }}</td>
         </tr>
