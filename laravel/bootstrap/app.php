@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(HandleCors::class);
         $middleware->trustProxies(at: '*');
+        $middleware->api(prepend: [
+            \App\Http\Middleware\ForceJsonResponse::class,
+        ]);
         $middleware->alias([
             'admin'    => \App\Http\Middleware\AdminMiddleware::class,
             'throttle' => \App\Http\Middleware\RateLimitMiddleware::class,
@@ -25,7 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->dontReport([]);
         $exceptions->shouldRenderJsonWhen(function (Request $request) {
-            return $request->is('api/*');
+            return $request->expectsJson() || str_starts_with($request->path(), 'api/');
         });
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             return response()->json([
