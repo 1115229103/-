@@ -270,8 +270,8 @@ echo "\n━━━ PHASE 6: Admin Operations ━━━\n";
 
 // Login as admin
 [$code, $adminLogin] = req('POST', '/auth/login', [
-    'email' => 'admin@aistory.com',
-    'password' => 'Admin123!',
+    'email' => 'admin@aistory.dev',
+    'password' => 'Admin123456',
 ]);
 if ($code !== 200) {
     warn("Admin login failed (HTTP {$code}) — admin tests skipped. Seed admin user first.");
