@@ -31,7 +31,7 @@ class ExportService
         // Build FFmpeg command
         $ffmpeg = config('services.ffmpeg.path', 'ffmpeg');
         $resolutionMap = ['720p' => '1280x720', '1080p' => '1920x1080', '4k' => '3840x2160', '8k' => '7680x4320'];
-        $scale = $resolutionMap[$maxResolution] ?? '1280x720';
+        $scale = $resolutionMap[$maxResolution] ?? $resolutionMap['720p'];
 
         $cmd = sprintf(
             '%s -f concat -safe 0 -i %s -vf "scale=%s:force_original_aspect_ratio=decrease,pad=%s:(ow-iw)/2:(oh-ih)/2" -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -y %s 2>&1',
@@ -49,11 +49,11 @@ class ExportService
         }
 
         // Execute FFmpeg
-        Log::info("Running FFmpeg: {$cmd}");
+        Log::info('FFmpeg composite start', ['work_id' => $work->id, 'resolution' => $maxResolution]);
         $output = [];
         $exitCode = 0;
         exec($cmd, $output, $exitCode);
-        Log::info("FFmpeg exit code: {$exitCode}", $output);
+        Log::info('FFmpeg composite end', ['work_id' => $work->id, 'exit_code' => $exitCode]);
 
         if ($exitCode !== 0) {
             throw new \RuntimeException('FFmpeg composite failed: ' . implode("\n", $output));

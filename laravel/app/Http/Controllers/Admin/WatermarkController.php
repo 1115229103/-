@@ -20,8 +20,8 @@ class WatermarkController extends Controller
         $v = Validator::make($request->all(), [
             'type' => 'required|string|in:image,text',
             'position' => 'required|string|in:top_left,top_right,bottom_left,bottom_right,center',
-            'image_url' => 'nullable|string|max:512',
-            'text' => 'nullable|string|max:256',
+            'image_url' => 'nullable|string|max:512|not_regex:/%/',
+            'text' => 'nullable|string|max:256|not_regex:/%/',
             'text_color' => 'nullable|string|regex:/^#[0-9a-fA-F]{6}$/',
             'opacity' => 'integer|min:0|max:100',
             'width_percent' => 'integer|min:0|max:100',

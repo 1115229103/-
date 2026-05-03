@@ -16,6 +16,20 @@ class WatermarkService
     }
 
     /**
+     * Escape a value for use inside an FFmpeg filter argument within a
+     * cmd.exe double-quoted string.  Handles both FFmpeg single-quote
+     * escaping and cmd.exe %-expansion suppression.
+     */
+    private function escapeFilterArg(string $value): string
+    {
+        // FFmpeg filter syntax: \' = literal ' inside single-quoted value
+        $escaped = str_replace("'", "\\'", $value);
+        // cmd.exe expands %VAR% inside double quotes — double the %
+        $escaped = str_replace('%', '%%', $escaped);
+        return $escaped;
+    }
+
+    /**
      * Inject watermark filter into an FFmpeg command string.
      * Uses FFmpeg overlay filter for visible watermarks.
      */
@@ -48,7 +62,6 @@ class WatermarkService
         [$w, $h] = explode('x', $resolution);
 
         $overlayW = intval((int)$w * $widthPercent);
-        $overlayH = -1; // Auto-scale height
 
         // Position coordinates
         $position = match ($config->position) {
@@ -66,7 +79,7 @@ class WatermarkService
             $textColor = ltrim($config->text_color ?? '#FFFFFF', '#');
             return sprintf(
                 "drawtext=text='%s':fontsize=%d:fontcolor=%s@%0.2f:x=%s:y=%s",
-                addslashes($config->text),
+                $this->escapeFilterArg($config->text),
                 $fontSize,
                 $textColor,
                 $config->opacity / 100,
@@ -77,10 +90,9 @@ class WatermarkService
 
         // Image watermark
         $opacity = $config->opacity / 100;
-        $imagePath = $config->image_url;
         return sprintf(
             "movie='%s',scale=%d:-1,format=rgba,colorchannelmixer=aa=%0.2f [wm]; [0:v][wm] overlay=%s",
-            addslashes($imagePath),
+            $this->escapeFilterArg($config->image_url),
             $overlayW,
             $opacity,
             $position
