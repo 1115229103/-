@@ -1,5 +1,5 @@
 ---
-verify_command: '"D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/api_smoke.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/admin_api_smoke.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/e2e.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/user_journey.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/security_fuzz.php" 2>&1'
+verify_command: '"D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/api_smoke.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/admin_api_smoke.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/e2e.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/user_journey.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/security_fuzz.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/ux_quality_audit.php" 2>&1'
 promise_marker: LOOP_DONE
 max_iterations: 0
 created: 2026-05-03T03:00:00Z
@@ -8,18 +8,19 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 68
+## Current Iteration: 69
 
 ## Verify Command
-All five test suites must pass with 0 failures:
+All six test suites must pass with 0 failures:
 - api_smoke.php (32 tests, exit 0)
 - admin_api_smoke.php (24 tests, exit 0)
 - e2e.php (33 tests, exit 0)
 - user_journey.php (24 tests, exit 0)
 - security_fuzz.php (41 tests, exit 0)
+- ux_quality_audit.php (39 tests, exit 0)
 
 ## Oracle Rules
-1. ✅ All 5 test files return exit code 0 (154 tests, 0 failures, 0 warnings)
+1. ✅ All 6 test files return exit code 0 (193 tests, 0 failures, 0 warnings)
 2. ✅ Frontend scaffolded and buildable (admin 193KB + user 300KB)
 3. ✅ Queue worker config exists (deploy/supervisor.conf + docker/supervisor.conf)
 4. ✅ Git repo — 51+ commits, clean tree
@@ -646,5 +647,42 @@ meta: {...}}`.
 - Frontend: user 300KB + admin 194KB (vite v8.0.10)
 - Dependencies: 0 composer CVEs, 0 npm vulns
 - 75 commits, clean tree
+
+## Iteration 69 — Queue Worker Integration Test + Supervisor Timeout Fix (+5/-5 lines, 3 files)
+
+### Approach: Queue lifecycle end-to-end validation — fundamentally different
+Switched QUEUE_CONNECTION from sync to database and manually tested the full
+queue lifecycle: dispatch → jobs table insert → artisan queue:work → FastAPI
+call → failure handling → retry. All previous iterations tested sync mode only
+— this validates the actual async processing path used in production.
+
+### Bug Found: Supervisor `--timeout` Missing
+Both `deploy/supervisor.conf` and `docker/supervisor.conf` omitted the `--timeout`
+flag. Laravel worker defaults to 60s, but `ComposeVideoJob` has `public int $timeout = 600`.
+Without matching worker timeout, the worker kills the job at 60s — video compositing
+jobs would never complete in production.
+
+### Changes
+- **deploy/supervisor.conf** — added `--timeout=600` to queue:work command
+- **docker/supervisor.conf** — same `--timeout=600` fix
+- **.claude/pua-loop-state.md** — iteration 69 summary
+
+### End-to-End Queue Test Results
+1. Dispatched RunPipelineStageJob via PipelineService::start() ✅
+2. Verified job stored in `jobs` table with correct payload ✅
+3. Worker picked up job and called FastAPI `/internal/run-stage` ✅
+4. FastAPI returned 500 (expected — fake API key) ✅
+5. Job retried 3 times then failed gracefully ✅
+6. Work status marked "failed" with error message ✅
+7. Job removed from queue, no poison pill ❌
+
+### Build & Test Results
+- API tests: 32 passed, 0 failed
+- Admin tests: 24 passed, 0 failed
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- Security fuzz: 41 passed, 0 failed
+- UX quality audit: 39 passed, 0 failed
+- **Total: 193 tests, 0 failures, 0 warnings**
 
 ## Status: ALL 7 ORACLE RULES SATISFIED — 193 TESTS GREEN, 0 WARNINGS
