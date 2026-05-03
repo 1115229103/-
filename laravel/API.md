@@ -98,6 +98,26 @@ Header: `Authorization: Bearer <token>`
 | new_password | string | 是 (min:8) |
 | new_password_confirmation | string | 是 |
 
+### PATCH /auth/me
+更新个人资料。支持部分更新。
+
+| 参数 | 类型 | 必填 |
+|------|------|------|
+| name | string | 否 (max:255) |
+| avatar_url | string | 否 (url, max:2048) |
+
+响应 200: `{data: {id, name, email, avatar_url}}`
+
+### DELETE /auth/me
+注销账号（GDPR 合规）。需密码确认，注销后所有 Token 立即失效，账号软删除保留数据完整性。
+
+| 参数 | 类型 | 必填 |
+|------|------|------|
+| password | string | 是 |
+
+响应 200: `{data: {message: "账号已注销"}}`
+响应 403: `{error: "wrong_password", message: "密码错误，无法注销账号"}`
+
 ---
 
 ## 用户模型配置 (API Keys)
