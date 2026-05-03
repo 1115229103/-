@@ -20,7 +20,7 @@ class BannerController extends Controller
         $v = Validator::make($request->all(), [
             'title' => 'required|string|max:128',
             'image_url' => 'required|url:http,https|max:512',
-            'link_url' => 'nullable|url:http,https|max:512',
+            'link_url' => 'nullable|string|max:512',
             'sort_order' => 'integer|min:0',
             'status' => 'string|in:active,inactive',
         ]);
@@ -39,7 +39,7 @@ class BannerController extends Controller
         $v = Validator::make($request->all(), [
             'title' => 'string|max:128',
             'image_url' => 'url:http,https|max:512',
-            'link_url' => 'nullable|url:http,https|max:512',
+            'link_url' => 'nullable|string|max:512',
             'sort_order' => 'integer|min:0',
             'status' => 'string|in:active,inactive',
         ]);

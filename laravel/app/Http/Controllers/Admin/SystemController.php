@@ -81,7 +81,11 @@ class SystemController extends Controller
         foreach ($v->validated() as $key => $value) {
             SystemSetting::updateOrCreate(
                 ['key' => $key],
-                ['value' => is_array($value) ? json_encode($value) : (string)$value]
+                ['value' => match (true) {
+                    is_array($value)  => json_encode($value),
+                    is_bool($value)   => $value ? '1' : '0',
+                    default           => (string)$value,
+                }]
             );
         }
 
