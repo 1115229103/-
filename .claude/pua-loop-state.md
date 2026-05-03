@@ -1817,4 +1817,26 @@ assumed local/testing environment behavior.
 - **Total: 306 tests, 0 failures**
 - 3 commits pushed to GitHub
 
-## Status: ✅ PRODUCTION READY — 306 TESTS GREEN, 0 WARNINGS, ALL CLEAN
+## Iteration 105 — Health Deep Fix + DB Housekeeping (+1 file)
+
+### Bugs Found & Fixed
+1. **/health/deep always degraded (Redis false-positive)**: The deep health check
+   unconditionally probed Redis via TCP, reporting `degraded` even when Redis isn't
+   installed. But CACHE_STORE=file, SESSION_DRIVER=file, QUEUE_CONNECTION=sync — 
+   Redis is not needed. Fixed by conditionally checking Redis only when
+   CACHE_STORE/QUEUE_CONNECTION/SESSION_DRIVER are set to 'redis'.
+
+### Housekeeping
+- DB cleanup: removed 889 test users (accumulated from ~100 test runs), 804 stale
+  personal_access_tokens, 0 remaining test data. Only 2 seeded users remain
+  (admin@aistory.dev + demo@aistory.dev).
+
+### Build & Test Results
+- api_smoke: 37/0/0, admin_api_smoke: 24/0/0, e2e: 33/0/0
+- user_journey: 24/0/0, security_fuzz: 41/0/0, ux_quality: 39/0/0
+- password_reset: 14/0/0, openapi_contract: 48/0/0
+- human_flow: 14/0/0, browser_e2e: 32/0/0, fastapi: 34/0/0
+- **Total: 340 tests, 0 failures**
+- Health/deep now returns 200 (was 503)
+
+## Status: ✅ PRODUCTION READY — 340 TESTS GREEN, 0 WARNINGS, DB CLEAN
