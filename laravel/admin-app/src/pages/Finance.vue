@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import api from '../api.js';
 
 const report = ref({});
@@ -12,6 +12,11 @@ onMounted(async () => {
     report.value = data.data || data || {};
   } catch { report.value = {}; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
+});
+
+const monthlyRevenue = computed(() => {
+  const days = report.value.revenue_by_day || [];
+  return days.reduce((sum, d) => sum + Number(d.total || 0), 0);
 });
 </script>
 
@@ -28,29 +33,32 @@ onMounted(async () => {
           <div class="stat-hint">累计收入</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">本月收入</div>
-          <div class="stat-value">¥{{ Number(report.monthly_revenue || 0).toFixed(2) }}</div>
-          <div class="stat-hint">当月</div>
+          <div class="stat-label">近30天收入</div>
+          <div class="stat-value">¥{{ monthlyRevenue.toFixed(2) }}</div>
+          <div class="stat-hint">按支付日期统计</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">订单总数</div>
           <div class="stat-value">{{ report.total_orders || 0 }}</div>
-          <div class="stat-hint">累计订单</div>
+          <div class="stat-hint">累计已完成支付</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">付费用户</div>
-          <div class="stat-value">{{ report.paid_users || 0 }}</div>
-          <div class="stat-hint">当前有效订阅</div>
+          <div class="stat-label">待处理订单</div>
+          <div class="stat-value">{{ report.pending_orders || 0 }}</div>
+          <div class="stat-hint">待支付订单</div>
         </div>
       </div>
-      <div v-if="report.subscription_distribution" class="card" style="margin-top:16px">
-        <h3>订阅类型分布</h3>
-        <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
-          <div v-for="(count, type) in report.subscription_distribution" :key="type" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-            <span>{{ type }}</span>
-            <span style="color:var(--text-h);font-weight:600">{{ count }} 人</span>
-          </div>
-        </div>
+      <div v-if="(report.revenue_by_day || []).length" class="card">
+        <h3>每日收入明细（近30天）</h3>
+        <table class="data-table" style="margin-top:12px">
+          <thead><tr><th>日期</th><th>收入</th></tr></thead>
+          <tbody>
+            <tr v-for="d in report.revenue_by_day" :key="d.date">
+              <td>{{ d.date }}</td>
+              <td>¥{{ Number(d.total || 0).toFixed(2) }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
