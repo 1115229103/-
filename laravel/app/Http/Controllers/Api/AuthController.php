@@ -35,11 +35,11 @@ class AuthController extends Controller
 
             $wrappedDek = $dekResponse->json('wrapped_dek');
             if (!$wrappedDek) {
-                return response()->json(['error' => 'Key generation failed'], 500);
+                return response()->json(['error' => 'key_generation_failed', 'message' => 'Key generation failed'], 500);
             }
         } catch (\Throwable $e) {
             report($e);
-            return response()->json(['error' => 'Key generation service unavailable'], 503);
+            return response()->json(['error' => 'key_generation_unavailable', 'message' => 'Key generation service unavailable'], 503);
         }
 
         $user = User::create([
@@ -76,7 +76,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['error' => '邮箱或密码错误'], 401);
+            return response()->json(['error' => 'invalid_credentials', 'message' => '邮箱或密码错误'], 401);
         }
 
         $token = $user->createToken('api-token')->plainTextToken;
@@ -115,7 +115,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json(['error' => '当前密码错误'], 403);
+            return response()->json(['error' => 'wrong_current_password', 'message' => '当前密码错误'], 403);
         }
 
         $user->update(['password' => Hash::make($request->new_password)]);

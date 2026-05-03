@@ -44,7 +44,7 @@ class WorkController extends Controller
         $planFeatures = $user->membership?->plan?->features ?? ['max_projects' => 3];
         $currentCount = Work::where('user_id', $user->id)->count();
         if ($currentCount >= ($planFeatures['max_projects'] ?? 3)) {
-            return response()->json(['error' => '项目数量已达上限，请升级套餐'], 403);
+            return response()->json(['error' => 'project_limit_reached', 'message' => '项目数量已达上限，请升级套餐'], 403);
         }
 
         $work = Work::create([
@@ -110,7 +110,7 @@ class WorkController extends Controller
         $work = Work::where('user_id', $request->user()->id)->findOrFail($id);
 
         if (!in_array($work->status, ['draft', 'failed'])) {
-            return response()->json(['error' => 'Work is already processing or completed'], 400);
+            return response()->json(['error' => 'work_already_processing', 'message' => 'Work is already processing or completed'], 400);
         }
 
         try {

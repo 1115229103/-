@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 58
+## Current Iteration: 59
 
 ## Verify Command
 All five test suites must pass with 0 failures:
@@ -22,7 +22,7 @@ All five test suites must pass with 0 failures:
 1. ✅ All 5 test files return exit code 0 (152 tests, 0 failures, 0 warnings)
 2. ✅ Frontend scaffolded and buildable (admin 193KB + user 300KB)
 3. ✅ Queue worker config exists (deploy/supervisor.conf + docker/supervisor.conf)
-4. ✅ Git repo — 48+ commits, clean tree
+4. ✅ Git repo — 49+ commits, clean tree
 5. ✅ Rate limiting configured + localhost bypass for dev
 6. ✅ API docs exist (API.md 312 lines + openapi.json 728 lines)
 7. ✅ e2e.php (33/0/0 — Section 7 now fully green)
@@ -217,6 +217,41 @@ dependency fails — ready for load balancer health checks and monitoring.
 - User journey: 24 passed, 0 failed
 - **Total: 111 tests, 0 failures, 0 warnings**
 - 45 commits, clean tree
+
+## Iteration 59 — API Response Format Standardization (+15/-11 lines, 6 files)
+
+### Approach: API design quality audit — fundamentally different
+Audited every controller's JSON response format for consistency. Found 9
+non-validation error responses using `{"error": "msg"}` without `message`
+key, and Sanctum returning `{"message": "..."}` without `error` key.
+Frontend devs had to check 3 different keys for errors: `error`, `message`,
+`errors`. Now standardized to exactly 2 patterns.
+
+### Changes
+- **AuthController.php** — 4 error responses: login `invalid_credentials`,
+  change-password `wrong_current_password`, register failures `key_generation_failed`
+  and `key_generation_unavailable`. All now: `{"error": "<code>", "message": "<text>"}`
+- **WorkController.php** — 2 error responses: `project_limit_reached` (403),
+  `work_already_processing` (400). Pipeline start already had both keys.
+- **ModelController.php** — 2 error responses: `key_encryption_failed` (500),
+  `key_verification_unavailable` (503)
+- **PlanController.php** — 1 error response: `invalid_plan_price` (400)
+- **bootstrap/app.php** — Added AuthenticationException handler normalizing
+  Sanctum's `{"message":"Unauthenticated."}` to `{"error":"unauthenticated",
+  "message":"Unauthenticated."}`
+
+### Response Format Standard
+- Success: `{"data": ...}` — all endpoints consistent
+- Non-validation error: `{"error": "<code>", "message": "<human text>"}` — unified
+- Validation error: `{"errors": {"field": ["msg"]}}` — 422 (Laravel standard)
+
+### Build & Test Results
+- API tests: 32 passed, 0 failed
+- Admin tests: 22 passed, 0 failed
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- Security fuzz: 41 passed, 0 failed
+- **Total: 152 tests, 0 failures, 0 warnings**
 
 ## Iteration 58 — Security Fuzz Testing (+302 lines, 1 file)
 

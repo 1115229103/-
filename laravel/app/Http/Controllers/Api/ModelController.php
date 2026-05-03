@@ -109,7 +109,7 @@ class ModelController extends Controller
         // Encrypt the API key via FastAPI
         $encryptedKey = $this->encryptKeyViaFastAPI($user->wrapped_dek, $rawKey);
         if (!$encryptedKey) {
-            return response()->json(['error' => 'Key encryption failed'], 500);
+            return response()->json(['error' => 'key_encryption_failed', 'message' => 'Key encryption failed'], 500);
         }
 
         $config = UserModelConfig::updateOrCreate(
@@ -216,7 +216,7 @@ class ModelController extends Controller
             $valid = $response->json('valid', false);
         } catch (\Throwable $e) {
             report($e);
-            return response()->json(['error' => 'Key verification service unavailable'], 503);
+            return response()->json(['error' => 'key_verification_unavailable', 'message' => 'Key verification service unavailable'], 503);
         }
         $config->update([
             'status'           => $valid ? 'active' : 'error',

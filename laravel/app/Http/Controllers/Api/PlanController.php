@@ -84,7 +84,7 @@ class PlanController extends Controller
             : $plan->price_monthly_cny;
 
         if ($amount <= 0) {
-            return response()->json(['error' => 'Invalid plan price'], 400);
+            return response()->json(['error' => 'invalid_plan_price', 'message' => 'Invalid plan price'], 400);
         }
 
         $order = Order::create([
