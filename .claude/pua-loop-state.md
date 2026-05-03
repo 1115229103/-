@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 64
+## Current Iteration: 65
 
 ## Verify Command
 All five test suites must pass with 0 failures:
@@ -479,6 +479,44 @@ completely untested: `/admin/action-templates` (never hit by any test) and
 ### Build & Test Results
 - API tests: 32 passed, 0 failed
 - Admin tests: **24 passed, 0 failed** (was 22)
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- Security fuzz: 41 passed, 0 failed
+- **Total: 154 tests, 0 failures, 0 warnings**
+
+## Iteration 65 — Controller Code Quality Audit (+2/-2 lines, 2 files)
+
+### Approach: Controller-by-controller code audit for N+1, validation, error format — fundamentally different
+Audited all 26 controllers (4 API + 22 admin) line-by-line for query efficiency,
+error format consistency, validation completeness, and authorization correctness.
+Found 1 N+1 query and 1 error format inconsistency (both regressions from earlier fixes).
+
+### Bugs Found & Fixed
+- **AuthController::me()** — N+1 query: `$user->membership?->plan?->only(...)`
+  accessed the `membership` relationship without eager loading, causing a separate
+  query for every authenticated user visiting `/auth/me`. Fixed by adding
+  `->load('membership.plan')` on the authenticated user. Also avoids the
+  `modelConfigs()->count()` query being in the same hot path (acceptable
+  as a single COUNT query, not N+1).
+- **WorkController::startPipeline()** — error response used human-readable text
+  `'Pipeline failed to start'` as the `error` code, instead of a machine-readable
+  code like `pipeline_start_failed`. This was the LAST non-standard error code
+  in the codebase after the iter 59 standardization.
+
+### Audit Findings (no issues across 24 other controllers)
+- All 22 admin controllers: proper eager loading (UserController, ReviewController,
+  WorkController use `with('user')`, `with('membership.plan')`) — no N+1
+- DashboardController: uses `::count()` and `::sum()` (aggregate queries) — correct
+- FinanceController: uses `::whereDate()` on `paid_at` column with index per iter 57
+- ModelRegistryController: SSRF-safe base_url via Pydantic validator in FastAPI
+- All admin mutations logged via OperationLog (ModelRegistryController.store/update/destroy/toggleStatus)
+- All API controllers scoped to `user_id` — proper user isolation
+- ModelController.storeConfig: `updateOrCreate` prevents duplicate configs per stage
+- PlanController.createOrder: validates `billing_cycle` enum and `payment_method`
+
+### Build & Test Results
+- API tests: 32 passed, 0 failed
+- Admin tests: 24 passed, 0 failed
 - E2E: 33 passed, 0 failed, 0 warnings
 - User journey: 24 passed, 0 failed
 - Security fuzz: 41 passed, 0 failed

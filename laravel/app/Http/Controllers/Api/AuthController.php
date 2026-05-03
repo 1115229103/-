@@ -128,7 +128,7 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user()->load('membership.plan');
         return response()->json([
             'data' => [
                 'id'              => $user->id,

@@ -119,7 +119,7 @@ class WorkController extends Controller
         } catch (\Throwable $e) {
             $work->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
             return response()->json([
-                'error' => 'Pipeline failed to start',
+                'error' => 'pipeline_start_failed',
                 'message' => $e->getMessage(),
             ], 500);
         }
