@@ -84,10 +84,11 @@ const saveSettings = async () => {
       <div class="card">
         <h3>系统信息</h3>
         <div v-if="Object.keys(EDITABLE_KEYS).length" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
-          <div v-for="(meta, key) in EDITABLE_KEYS" :key="key" style="display:flex;flex-direction:column;gap:4px">
-            <label>{{ meta.label }} <span style="font-size:0.7rem;color:var(--text-muted)">({{ key }})</span></label>
+          <div v-for="(meta, key) in EDITABLE_KEYS" :key="key" class="form-group">
+            <label :for="'setting-' + key">{{ meta.label }} <span style="font-size:0.7rem;color:var(--text-muted)">({{ key }})</span></label>
             <input
               v-if="meta.type === 'boolean'"
+              :id="'setting-' + key"
               type="checkbox"
               :checked="system[key] === '1' || system[key] === true"
               @change="system[key] = $event.target.checked ? '1' : '0'"
@@ -95,6 +96,7 @@ const saveSettings = async () => {
             />
             <input
               v-else
+              :id="'setting-' + key"
               v-model="system[key]"
               class="form-input"
               :type="meta.type === 'integer' ? 'number' : 'text'"

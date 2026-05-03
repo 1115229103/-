@@ -147,16 +147,5 @@ async function saveEdit(stage) {
 
 <style scoped>
 .config-card { margin-bottom: 10px; }
-.form-group { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-.form-group label { font-size: 0.85rem; color: var(--text-muted); }
-.form-input {
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  background: var(--bg);
-  color: var(--text);
-  resize: vertical;
-}
-.form-input:focus { border-color: var(--primary); outline: none; }
+.form-input { resize: vertical; }
 </style>

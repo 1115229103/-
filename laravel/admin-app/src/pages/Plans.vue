@@ -225,33 +225,3 @@ async function deletePlan(p) {
   </div>
 </template>
 
-<style scoped>
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.45);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1000;
-}
-.modal {
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 24px;
-  width: 100%;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-  max-height: 85vh;
-  overflow-y: auto;
-}
-.form-group { display: flex; flex-direction: column; gap: 4px; }
-.form-group label { font-size: 0.85rem; color: var(--text-muted); }
-.form-input {
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  background: var(--bg);
-  color: var(--text);
-}
-.form-input:focus { border-color: var(--primary); outline: none; }
-.btn.danger { color: #e74c3c; border-color: #e74c3c; }
-.btn.danger:hover { background: #e74c3c; color: #fff; }
-</style>
