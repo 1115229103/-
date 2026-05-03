@@ -12,32 +12,35 @@ class RateLimitMiddleware
     public function handle(Request $request, Closure $next, int $maxAttempts = 120, int $decayMinutes = 1): Response
     {
         $isAuth = $request->user() !== null;
-        // Guests get 1/4 the limit (min 20); authenticated users get the full limit
         $limit = $isAuth ? $maxAttempts : max(20, (int)($maxAttempts / 4));
         $key = 'rate_limit:' . ($isAuth ? $request->user()->id : $request->ip());
         $ttl = $decayMinutes * 60;
 
-        $attempts = Cache::get($key, 0);
+        // Atomic window init: Cache::add only sets if key does not exist
+        Cache::add($key . ':timer', time(), $ttl);
+        Cache::add($key, 0, $ttl);
 
-        if ($attempts >= $limit) {
+        // Atomic increment preserves the original TTL set by Cache::add
+        $attempts = Cache::increment($key);
+
+        if ($attempts > $limit) {
+            $windowStart = Cache::get($key . ':timer', time());
+            $retryAfter = max(1, $ttl - (time() - (int)$windowStart));
             return response()->json([
                 'error'   => 'Too Many Requests',
-                'message' => "Rate limit exceeded. Try again in {$ttl} seconds.",
+                'message' => "Rate limit exceeded. Try again in {$retryAfter} seconds.",
             ], 429)->withHeaders([
-                'Retry-After'           => $ttl,
+                'Retry-After'           => $retryAfter,
                 'X-RateLimit-Limit'     => $limit,
                 'X-RateLimit-Remaining' => 0,
             ]);
         }
 
-        Cache::put($key, $attempts + 1, $ttl);
-
         $response = $next($request);
 
         if ($response instanceof Response) {
             $response->headers->set('X-RateLimit-Limit', (string)$limit);
-            $remaining = $limit - $attempts - 1;
-            $response->headers->set('X-RateLimit-Remaining', (string)max(0, $remaining));
+            $response->headers->set('X-RateLimit-Remaining', (string)max(0, $limit - $attempts));
         }
 
         return $response;
