@@ -20,7 +20,7 @@ All three test suites must pass:
 1. ✅ Both test files must return exit code 0
 2. ✅ Frontend must be scaffolded and buildable (admin 191KB + user 300KB)
 3. ✅ Queue worker config must exist
-4. ✅ Git repo must be initialized — 20 commits, clean tree
+4. ✅ Git repo must be initialized — 21 commits, clean tree
 5. ✅ Rate limiting must be configured
 6. ✅ API docs must exist (256 lines)
 7. ✅ e2e.php (29+0+4WARN sequential)
