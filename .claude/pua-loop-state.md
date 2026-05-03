@@ -1,5 +1,5 @@
 ---
-verify_command: '"D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/api_smoke.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/admin_api_smoke.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/e2e.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/user_journey.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/security_fuzz.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/ux_quality_audit.php" 2>&1'
+verify_command: '"D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/api_smoke.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/admin_api_smoke.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/e2e.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/user_journey.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/security_fuzz.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/ux_quality_audit.php" 2>&1; "D:/xampp/php/php.exe" "d:/办公/manju/laravel/tests/password_reset_test.php" 2>&1'
 promise_marker: LOOP_DONE
 max_iterations: 0
 created: 2026-05-03T03:00:00Z
@@ -8,16 +8,17 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 82
+## Current Iteration: 83
 
 ## Verify Command
-All six test suites must pass with 0 failures:
+All seven test suites must pass with 0 failures:
 - api_smoke.php (32 tests, exit 0)
 - admin_api_smoke.php (24 tests, exit 0)
 - e2e.php (33 tests, exit 0)
 - user_journey.php (24 tests, exit 0)
 - security_fuzz.php (41 tests, exit 0)
 - ux_quality_audit.php (39 tests, exit 0)
+- password_reset_test.php (14 tests, exit 0)
 
 ## Iteration 80 — Unauthenticated Exception Handler Fix (+20 lines, 2 files)
 
@@ -89,8 +90,37 @@ Fundamentally different: scanned for files that tests don't cover.
 - SPA routing: /user-app/ → 200, /admin/ → 200, /user-app/login → 200 ✅
 - Static assets: JS/CSS served with correct content-type ✅
 
+## Iteration 83 — New Test Suite + Controller Audit (+214 lines, 1 file)
+
+### Approach: 补充测试用例 + 全控制器审计
+Fundamentally different: ADDED missing test coverage instead of auditing existing code.
+Wrote `password_reset_test.php` — 14 tests covering the full password reset lifecycle.
+Also cross-audited all 24 controllers for N+1 queries (zero found).
+
+### New Test: password_reset_test.php (14 tests)
+- Forgot password with valid email → 200 ✅
+- Dev mode token returned ✅
+- Anti-enumeration: non-existent email → same 200 + vague message ✅
+- Wrong token → 422 ✅
+- Valid token reset → 200 ✅
+- Old password no longer works → 401 ✅
+- New password login → 200 ✅
+- Old tokens revoked after reset → 401 ✅
+- Token reuse prevention → 422 ✅
+- Password confirmation mismatch → 422 ✅
+
+### Controller Audit (24 files)
+- Zero N+1 query issues — all relation accesses properly eager-loaded with `with()`
+- Zero TODO/FIXME/HACK in app/
+- Password reset flow: SHA-256 token, timing-safe `hash_equals()`, 60-min expiry,
+  anti-enumeration response, token revocation on reset
+- 22 Admin controllers all exist on disk, all 24 tests pass
+
+### Verification
+- All 7 test suites: 207 PHP + 34 Python = 241/0/0 ✅
+
 ## Oracle Rules
-1. ✅ All 7 test suites return exit code 0 (227 tests: 193 PHP + 34 Python, 0 failures)
+1. ✅ All 7 test suites return exit code 0 (241 tests: 207 PHP + 34 Python, 0 failures)
 2. ✅ Frontend scaffolded and buildable (admin 194KB + user 300KB)
 3. ✅ Queue worker config exists (deploy/supervisor.conf + docker/supervisor.conf)
 4. ✅ Git repo — 81 commits, clean tree
