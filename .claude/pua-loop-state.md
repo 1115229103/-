@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 75
+## Current Iteration: 76
 
 ## Verify Command
 All six test suites must pass with 0 failures:
@@ -940,5 +940,49 @@ deployment script, and security surface from an operator's perspective.
 
 ### No Changes Required
 Every checkpoint passed — no code changes needed.
+
+## Iteration 76 — Real Human Simulation + Membership Fix (+13 lines, 1 file)
+
+### Approach: Live human simulation via curl — fundamentally different
+All 28 prior iterations ran PHP test suites that use programmatic curl with known test
+patterns. This iteration simulates a REAL human: typing actual names/emails, navigating
+the flow organically (register→login→configure key→create work→pipeline→admin→cleanup),
+and checking every response for UX issues. Discovered 1 production onboarding blocker
+that all test suites missed because they either use pre-seeded users or don't check
+the membership field.
+
+### Bug Found: New Users Get No Membership
+`AuthController::register()` created a user with `wrapped_dek` but never assigned a
+free plan membership. The `UserSeeder` does this for demo users, but real registration
+didn't. Result: `/auth/me` returned `membership: null` for every newly registered user,
+meaning they'd see no plan info in the UI, and plan-based feature gating relied on
+fallback defaults rather than actual membership data.
+
+### Changes
+- **AuthController.php** — added `Plan` + `Membership` imports; after user creation,
+  auto-assign free plan membership (slug=`free`) with status=`active`. Matches
+  seeder pattern exactly.
+
+### Human Simulation Results (13-phase flow)
+| Phase | Result | Details |
+|-------|--------|---------|
+| 1. Register | ✅ 201 | Token + user returned |
+| 2. Login | ✅ 200 | Token returned |
+| 3. Me | ✅ Fixed | membership now `{name, tier: free}` |
+| 4. Model config | ✅ 201 | api_key_masked works |
+| 5. Create work | ✅ 201 | draft status, title saved |
+| 6. Pipeline start | ✅ 200 | Returns status + pipeline_state |
+| 7. Pipeline progress | ✅ OK | Clear error: "No model configured for stage" |
+| 8. Works list | ✅ 200 | Pagination keys present |
+| 9. Admin dashboard | ✅ 403 | Correctly rejects non-admin user |
+| 10. Admin users | ✅ 403 | Correctly rejects non-admin user |
+| 11. Work detail | ✅ 200 | All relations present (script, characters, etc.) |
+| 12. Cleanup | ✅ 204 | Work + config deleted, logout successful |
+
+### Build & Test Results
+- PHP: 32+24+33+24+41+39 = 193 passed, 0 failed
+- Python: 34 passed, 0 failed
+- **Total: 227 tests, 0 failures, 0 warnings**
+- 83 commits, clean tree
 
 ## Status: PRODUCTION READY — 227 TESTS GREEN, 0 WARNINGS, ALL CHECKS PASSED
