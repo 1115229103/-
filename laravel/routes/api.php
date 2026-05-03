@@ -47,20 +47,25 @@ Route::middleware('throttle:120,1')->group(function () {
             $healthy = false;
         }
 
-        // Redis check — quick TCP socket instead of full Predis handshake
-        try {
-            $redisHost = env('REDIS_HOST', '127.0.0.1');
-            $redisPort = (int) env('REDIS_PORT', 6379);
-            $fp = @fsockopen($redisHost, $redisPort, $errNo, $errStr, $timeout);
-            if ($fp) {
-                fclose($fp);
-                $checks['redis'] = ['status' => 'ok'];
-            } else {
-                throw new \Exception($errStr ?: 'Connection refused');
+        // Redis check — only if Redis is configured as a driver
+        $usesRedis = str_contains(env('CACHE_STORE', ''), 'redis')
+            || env('QUEUE_CONNECTION') === 'redis'
+            || env('SESSION_DRIVER') === 'redis';
+        if ($usesRedis) {
+            try {
+                $redisHost = env('REDIS_HOST', '127.0.0.1');
+                $redisPort = (int) env('REDIS_PORT', 6379);
+                $fp = @fsockopen($redisHost, $redisPort, $errNo, $errStr, $timeout);
+                if ($fp) {
+                    fclose($fp);
+                    $checks['redis'] = ['status' => 'ok'];
+                } else {
+                    throw new \Exception($errStr ?: 'Connection refused');
+                }
+            } catch (\Exception $e) {
+                $checks['redis'] = ['status' => 'error', 'message' => $e->getMessage()];
+                $healthy = false;
             }
-        } catch (\Exception $e) {
-            $checks['redis'] = ['status' => 'error', 'message' => $e->getMessage()];
-            $healthy = false;
         }
 
         // FastAPI check — quick TCP socket
