@@ -66,13 +66,16 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Infrastructure health check for load balancers and monitoring."""
+    """Infrastructure health check for load balancers and monitoring.
+
+    Only checks DB connectivity. Redis is not used by FastAPI directly
+    (pipeline execution is stateless, no Celery/broker dependency).
+    """
     from app.config import get_settings
 
     settings = get_settings()
 
     db_ok = False
-    redis_ok = False
 
     try:
         import socket
@@ -84,23 +87,11 @@ async def health():
     except Exception:
         pass
 
-    try:
-        import socket
-        s = socket.socket()
-        s.settimeout(1)
-        s.connect((settings.REDIS_HOST, settings.REDIS_PORT))
-        s.close()
-        redis_ok = True
-    except Exception:
-        pass
-
-    degraded = not db_ok or not redis_ok
     return {
-        "status": "degraded" if degraded else "ok",
+        "status": "ok" if db_ok else "degraded",
         "service": "AIStory AI Gateway",
         "version": "0.1.0",
         "checks": {
             "database": "ok" if db_ok else "fail",
-            "redis": "ok" if redis_ok else "fail",
         },
     }
