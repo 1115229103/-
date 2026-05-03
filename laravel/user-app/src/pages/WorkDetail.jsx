@@ -66,8 +66,12 @@ export default function WorkDetail() {
 
   const handleDelete = async () => {
     if (!confirm('确定删除此作品？')) return;
-    await api.delete(`/works/${id}`);
-    navigate('/dashboard');
+    try {
+      await api.delete(`/works/${id}`);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.error || err.response?.data?.message || '删除失败，请重试');
+    }
   };
 
   if (loading) return <div className="dashboard"><main><p style={{color:'var(--text-muted)'}}>加载中...</p></main></div>;

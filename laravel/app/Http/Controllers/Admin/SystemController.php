@@ -85,6 +85,6 @@ class SystemController extends Controller
             );
         }
 
-        return response()->json(['status' => 'ok']);
+        return response()->json(['data' => ['status' => 'ok']]);
     }
 }

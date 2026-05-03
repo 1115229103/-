@@ -105,7 +105,7 @@ class PipelineService
 
     private function buildImageGenParams(Work $work): array
     {
-        $storyboards = $work->storyboards()->where('status', 'pending')->get();
+        $storyboards = $work->storyboards()->where('status', 'pending')->with('scene')->get();
         $prompts = [];
 
         foreach ($storyboards as $sb) {
@@ -132,14 +132,17 @@ class PipelineService
         $storyboards = $work->storyboards()
             ->where('status', 'completed')
             ->whereNotNull('image_url')
+            ->with('scene')
             ->get();
 
         $tasks = [];
+        // Preload all characters for this work to avoid N+1 inside the loop
+        $allCharacters = $work->characters()->get()->keyBy('name');
         foreach ($storyboards as $sb) {
             $scene = $sb->scene;
             $characters = $sb->characters_in_frame ?? [];
             $charName = $characters[0] ?? '';
-            $character = $work->characters()->where('name', $charName)->first();
+            $character = $allCharacters->get($charName);
 
             $tasks[] = [
                 'storyboard_id' => $sb->id,

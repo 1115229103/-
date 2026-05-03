@@ -144,7 +144,7 @@ class ModelRegistryController extends Controller
             ModelRegistry::where('id', $item['id'])->update(['sort_order' => $item['sort_order']]);
         }
 
-        return response()->json(['status' => 'ok']);
+        return response()->json(['data' => ['status' => 'ok']]);
     }
 
     /**
