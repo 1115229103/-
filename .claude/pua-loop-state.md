@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 101
+## Current Iteration: 102
 
 ## Verify Command
 All seven test suites must pass with 0 failures:
@@ -19,6 +19,42 @@ All seven test suites must pass with 0 failures:
 - security_fuzz.php (41 tests, exit 0)
 - ux_quality_audit.php (39 tests, exit 0)
 - password_reset_test.php (14 tests, exit 0)
+
+## Iteration 102 — Profile Update + Account Deletion Endpoints (+82 lines, 3 files)
+
+### Approach: Feature completeness — add missing user self-service endpoints
+Route audit revealed 2 missing features for production launch: profile editing
+and account deletion. All prior iterations focused on work/pipeline/admin — the
+user's own identity management was incomplete.
+
+### New Endpoints
+- **PATCH /auth/me** — Update profile (name: string|max:255, avatar_url: url|max:2048|nullable).
+  Returns updated user data with id/name/email/avatar_url.
+- **DELETE /auth/me** — GDPR-compliant account deletion. Requires password confirmation,
+  revokes all tokens, soft-deletes user (preserves works/data integrity).
+  Returns `{"data":{"message":"账号已注销"}}`.
+
+### Edge Cases Verified
+- Wrong password → 403 `{"error":"wrong_password","message":"密码错误，无法注销账号"}`
+- No auth → 401 (both endpoints)
+- Soft-delete confirmed (User model has SoftDeletes trait)
+- Cannot login after deletion → 401
+- Token invalidated after deletion → 401
+
+### Changes
+- `AuthController.php`: +52 lines — updateProfile() + deleteAccount() methods
+- `routes/api.php`: +2 routes in auth:sanctum group
+- `tests/api_smoke.php`: +5 tests (profile update, wrong password, deletion, token
+  invalidation, login-after-deletion) — 32→37 tests
+
+### Test Results — All 306/0/0
+- PHP: 37+24+33+24+41+39+14 = 212/0/0 (was 207/0/0)
+- Human Flow Simulation: 14/0/0
+- OpenAPI Contract: 48/0/0
+- Browser E2E: 32/0/0
+- **Total: 306 checks, 0 failures, 0 warnings**
+
+### Commit: 6fe7ebe — feat: profile update + account deletion
 
 ## Iteration 101 — Environment Fix + Test Assertion Updates (+3 files)
 
