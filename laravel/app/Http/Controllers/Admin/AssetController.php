@@ -20,7 +20,7 @@ class AssetController extends Controller
         $v = Validator::make($request->all(), [
             'name' => 'required|string|max:128',
             'type' => 'required|string|in:bgm,sfx,image,video',
-            'file_url' => 'required|url:http,https|max:512',
+            'file_url' => 'required|string|max:512',
             'mime_type' => 'nullable|string|max:64',
             'file_size_bytes' => 'nullable|integer|min:0',
             'duration_sec' => 'nullable|numeric|min:0',
@@ -43,7 +43,7 @@ class AssetController extends Controller
         $v = Validator::make($request->all(), [
             'name' => 'string|max:128',
             'type' => 'string|in:bgm,sfx,image,video',
-            'file_url' => 'url:http,https|max:512',
+            'file_url' => 'string|max:512',
             'mime_type' => 'nullable|string|max:64',
             'file_size_bytes' => 'nullable|integer|min:0',
             'duration_sec' => 'nullable|numeric|min:0',
