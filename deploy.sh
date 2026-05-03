@@ -73,13 +73,17 @@ if command -v npm >/dev/null 2>&1; then
 fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 5. Database
+# 5. Storage
+info "Linking storage..."
+php artisan storage:link 2>/dev/null || info "Storage link already exists"
+
+# 6. Database
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 info "Running migrations..."
 php artisan migrate --force --seed
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 6. Cache & Optimize
+# 7. Cache & Optimize
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 if [ "$APP_ENV" = "production" ]; then
     info "Optimizing for production..."
@@ -95,7 +99,7 @@ else
 fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 7. Permissions
+# 8. Permissions
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 info "Setting permissions..."
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
@@ -103,7 +107,7 @@ chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || \
     warn "Could not set ownership — run as root if needed"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 8. Verify
+# 9. Verify
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 echo ""
 echo "=== Deployment Complete ==="

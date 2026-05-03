@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 60
+## Current Iteration: 61
 
 ## Verify Command
 All five test suites must pass with 0 failures:
@@ -22,7 +22,7 @@ All five test suites must pass with 0 failures:
 1. ✅ All 5 test files return exit code 0 (152 tests, 0 failures, 0 warnings)
 2. ✅ Frontend scaffolded and buildable (admin 193KB + user 300KB)
 3. ✅ Queue worker config exists (deploy/supervisor.conf + docker/supervisor.conf)
-4. ✅ Git repo — 49+ commits, clean tree
+4. ✅ Git repo — 51+ commits, clean tree
 5. ✅ Rate limiting configured + localhost bypass for dev
 6. ✅ API docs exist (API.md 312 lines + openapi.json 728 lines)
 7. ✅ e2e.php (33/0/0 — Section 7 now fully green)
@@ -217,6 +217,42 @@ dependency fails — ready for load balancer health checks and monitoring.
 - User journey: 24 passed, 0 failed
 - **Total: 111 tests, 0 failures, 0 warnings**
 - 45 commits, clean tree
+
+## Iteration 61 — Deploy Readiness Audit (+8/-4 lines, 6 files)
+
+### Approach: Production operations audit — fundamentally different
+Simulated full production deployment lifecycle: config:cache, route:cache,
+view:cache, event:cache, storage:link. Found 3 blockers that would cause
+`deploy.sh` to fail on a fresh production server.
+
+### Bugs Found & Fixed
+- **`view:cache` crashes on fresh deploy** — Laravel 11 API project has no
+  `resources/views/` directory. `php artisan view:cache` fails with error:
+  `The resources/views directory does not exist.` Created `.gitkeep` to
+  ensure directory always exists.
+- **`CACHE_DRIVER` ignored silently** — Laravel 11 config reads `CACHE_STORE`,
+  not `CACHE_DRIVER`. Both `.env.example` and `deploy/.env.production.example`
+  used the old key — cache driver setting was silently ignored, falling back
+  to `database`. Fixed to `CACHE_STORE` in all 3 env files.
+- **Missing `storage:link` in deploy.sh** — ExportService uses storage paths.
+  `public/storage` symlink was missing. Added `php artisan storage:link` to
+  deploy.sh step 5.
+
+### Deploy Cycle Verified
+- `php artisan config:cache` ✅
+- `php artisan route:cache` ✅  
+- `php artisan view:cache` ✅ (after fix)
+- `php artisan event:cache` ✅
+- `php artisan storage:link` ✅
+- `php artisan optimize` (all four caches) ✅
+
+### Build & Test Results
+- API tests: 32 passed, 0 failed
+- Admin tests: 22 passed, 0 failed
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- Security fuzz: 41 passed, 0 failed
+- **Total: 152 tests, 0 failures, 0 warnings**
 
 ## Iteration 60 — Frontend Build & SPA Routing Audit (+3/-5 lines, 5 files)
 
