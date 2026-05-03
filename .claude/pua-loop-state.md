@@ -1831,12 +1831,19 @@ assumed local/testing environment behavior.
   personal_access_tokens, 0 remaining test data. Only 2 seeded users remain
   (admin@aistory.dev + demo@aistory.dev).
 
+### Additional Fixes
+2. **API.md missing PATCH/DELETE /auth/me docs**: Endpoints added in iter 102 were
+   never documented. Added full documentation with parameters and response examples.
+3. **API.md phantom new_password_confirmation**: Doc claimed this field was required
+   but code doesn't validate it. Removed from docs.
+
 ### Build & Test Results
 - api_smoke: 37/0/0, admin_api_smoke: 24/0/0, e2e: 33/0/0
 - user_journey: 24/0/0, security_fuzz: 41/0/0, ux_quality: 39/0/0
 - password_reset: 14/0/0, openapi_contract: 48/0/0
 - human_flow: 14/0/0, browser_e2e: 32/0/0, fastapi: 34/0/0
-- **Total: 340 tests, 0 failures**
+- **Total: 340 tests, 0 failures** across 11 suites
 - Health/deep now returns 200 (was 503)
+- 2 commits pending push (GitHub unreachable)
 
 ## Status: ✅ PRODUCTION READY — 340 TESTS GREEN, 0 WARNINGS, DB CLEAN
