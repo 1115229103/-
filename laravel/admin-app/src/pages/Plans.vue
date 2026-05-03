@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue';
 import api from '../api.js';
 
 const plans = ref([]);
@@ -27,6 +27,17 @@ onMounted(async () => {
   loading.value = false;
 });
 
+function onKeydown(e) {
+  if (e.key === 'Escape' && showModal.value) {
+    showModal.value = false;
+  }
+}
+watch(showModal, (v) => {
+  if (v) document.addEventListener('keydown', onKeydown);
+  else document.removeEventListener('keydown', onKeydown);
+});
+onUnmounted(() => document.removeEventListener('keydown', onKeydown));
+
 function openCreate() {
   editing.value = null;
   Object.assign(form, emptyForm());
@@ -47,6 +58,10 @@ function openEdit(p) {
 }
 
 async function savePlan() {
+  if (!form.name.trim() || !form.slug.trim() || !form.tier) {
+    alert('请填写所有必填字段（名称、标识、级别）');
+    return;
+  }
   saving.value = true;
   try {
     const payload = {
@@ -81,7 +96,9 @@ async function toggleStatus(p) {
   try {
     const { data } = await api.put(`/admin/plans/${p.id}/status`);
     p.is_active = data.data.is_active;
-  } catch {}
+  } catch (e) {
+    alert('操作失败: ' + (e.response?.data?.message || '请重试'));
+  }
 }
 
 async function deletePlan(p) {
@@ -89,7 +106,9 @@ async function deletePlan(p) {
   try {
     await api.delete(`/admin/plans/${p.id}`);
     plans.value = plans.value.filter(x => x.id !== p.id);
-  } catch {}
+  } catch (e) {
+    alert('删除失败: ' + (e.response?.data?.message || '请重试'));
+  }
 }
 </script>
 

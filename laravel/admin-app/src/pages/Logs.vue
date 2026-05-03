@@ -29,6 +29,9 @@ onMounted(async () => {
           <td style="font-size:0.85rem;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.description || l.detail || '—' }}</td>
           <td style="font-size:0.85rem">{{ l.created_at }}</td>
         </tr>
+        <tr v-if="logs.length === 0">
+          <td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">暂无操作日志</td>
+        </tr>
       </tbody>
     </table>
   </div>

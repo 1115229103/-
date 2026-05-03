@@ -31,6 +31,9 @@ onMounted(async () => {
           <td>{{ v.style }}</td>
           <td><span class="badge" :class="v.status === 'active' ? 'success' : 'error'">{{ v.status === 'active' ? '启用' : '禁用' }}</span></td>
         </tr>
+        <tr v-if="voices.length === 0">
+          <td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px">暂无音色数据</td>
+        </tr>
       </tbody>
     </table>
   </div>

@@ -119,6 +119,7 @@ class KlingAdapter(BaseAdapter):
 
     async def _poll_task(self, base_url: str, task_id: str, token: str, timeout: int = 600) -> dict[str, Any]:
         """Poll an async Kling task until completion."""
+        timeout = min(timeout, 1800)  # Cap at 30 minutes
         import asyncio
 
         async with httpx.AsyncClient(timeout=30) as client:

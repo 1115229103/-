@@ -35,14 +35,14 @@ export default function Register() {
       <form onSubmit={handleSubmit} className="auth-form">
         <h2>注册 AIStory</h2>
         {errors.general && <div className="alert error">{errors.general}</div>}
-        <label>昵称</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+        <label htmlFor="reg-name">昵称</label>
+        <input id="reg-name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
         {errors.name && <span className="field-error">{errors.name[0]}</span>}
-        <label>邮箱</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <label htmlFor="reg-email">邮箱</label>
+        <input id="reg-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         {errors.email && <span className="field-error">{errors.email[0]}</span>}
-        <label>密码</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+        <label htmlFor="reg-password">密码</label>
+        <input id="reg-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
         {errors.password && <span className="field-error">{errors.password[0]}</span>}
         <button type="submit" disabled={loading} className="btn primary full">
           {loading ? '注册中...' : '注册'}

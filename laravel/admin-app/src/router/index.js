@@ -19,8 +19,10 @@ import Finance from '../pages/Finance.vue';
 import Settings from '../pages/Settings.vue';
 import Roles from '../pages/Roles.vue';
 import Logs from '../pages/Logs.vue';
+import Login from '../pages/Login.vue';
 
 const routes = [
+  { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
   { path: '/', name: 'Dashboard', component: Dashboard },
   { path: '/models', name: 'Models', component: Models },
   { path: '/prompts', name: 'Prompts', component: Prompts },
@@ -44,8 +46,14 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/admin/'),
   routes,
+});
+
+router.beforeEach((to) => {
+  const token = localStorage.getItem('admin_token');
+  if (!to.meta.guest && !token) return { name: 'Login' };
+  if (to.meta.guest && token) return { name: 'Dashboard' };
 });
 
 export default router;

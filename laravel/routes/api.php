@@ -27,6 +27,9 @@ Route::middleware('throttle:120,1')->group(function () {
     Route::post('/auth/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::post('/auth/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
 
+    Route::post('/auth/forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store']);
+    Route::post('/auth/reset-password', [\App\Http\Controllers\Auth\NewPasswordController::class, 'store']);
+
     Route::get('/models/categories', [ModelController::class, 'categories']);
     Route::get('/models', [ModelController::class, 'index']);
 });

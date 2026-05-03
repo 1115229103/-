@@ -6,15 +6,27 @@ export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [works, setWorks] = useState([]);
   const [membership, setMembership] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) setUser(JSON.parse(stored));
 
-    api.get('/auth/me').then(({ data }) => setUser(data.data)).catch(() => {});
-    api.get('/works').then(({ data }) => setWorks(data.data?.data || [])).catch(() => {});
-    api.get('/membership').then(({ data }) => setMembership(data.data)).catch(() => {});
+    Promise.all([
+      api.get('/auth/me'),
+      api.get('/works'),
+      api.get('/membership'),
+    ]).then(([meRes, worksRes, memRes]) => {
+      setUser(meRes.data.data);
+      setWorks(worksRes.data.data?.data || []);
+      setMembership(memRes.data.data);
+    }).catch(() => {
+      setError('加载失败，请检查网络后刷新页面');
+    }).finally(() => {
+      setLoading(false);
+    });
   }, []);
 
   const handleLogout = async () => {
@@ -23,6 +35,16 @@ export default function Dashboard() {
     localStorage.removeItem('user');
     navigate('/login');
   };
+
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <main style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'80px 0'}}>
+          <p style={{color:'var(--text-muted)'}}>加载中...</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -36,6 +58,11 @@ export default function Dashboard() {
         </div>
       </header>
       <main>
+        {error && (
+          <div style={{background:'rgba(239,68,68,0.1)',color:'#ef4444',padding:'12px 16px',borderRadius:'8px',marginBottom:'16px'}}>
+            {error}
+          </div>
+        )}
         <section className="works-section">
           <div className="section-header">
             <h2>我的作品</h2>

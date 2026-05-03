@@ -28,6 +28,9 @@ onMounted(async () => {
           <td><span class="badge" :class="w.status === 'completed' ? 'success' : w.status === 'processing' ? 'info' : ''">{{ w.status }}</span></td>
           <td>{{ w.created_at?.substring(0, 10) }}</td>
         </tr>
+        <tr v-if="works.length === 0">
+          <td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px">暂无作品</td>
+        </tr>
       </tbody>
     </table>
   </div>

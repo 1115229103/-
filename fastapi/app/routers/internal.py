@@ -5,15 +5,41 @@ Laravel passes user_id + stage + prompt, FastAPI handles key
 decryption and AI API calling. Laravel never sees plaintext keys.
 """
 
+import re
 from typing import Any
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Header
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.services.key_service import get_key_service
 from app.services.pipeline_service import PipelineService
 
 router = APIRouter(prefix="/internal", tags=["internal"])
+
+# Private/localhost IP ranges blocked for SSRF prevention
+_BLOCKED_IP_PATTERNS = [
+    re.compile(r"^127\.\d+\.\d+\.\d+$"),
+    re.compile(r"^10\.\d+\.\d+\.\d+$"),
+    re.compile(r"^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$"),
+    re.compile(r"^192\.168\.\d+\.\d+$"),
+    re.compile(r"^0\.0\.0\.0$"),
+    re.compile(r"^localhost$", re.IGNORECASE),
+    re.compile(r"^\[::1\]$"),
+]
+
+
+def _is_safe_url(url: str) -> bool:
+    """Reject URLs pointing to private/internal networks."""
+    try:
+        parsed = urlparse(url if "://" in url else f"https://{url}")
+        host = parsed.hostname or url
+        for pattern in _BLOCKED_IP_PATTERNS:
+            if pattern.match(host):
+                return False
+        return True
+    except Exception:
+        return False
 
 
 # ─── Request/Response Schemas ──────────────────────────────────
@@ -25,6 +51,14 @@ class StageRunRequest(BaseModel):
     model_cfg: dict[str, Any] = Field(validation_alias="model_config")
     stage_input: dict[str, Any] = {}
 
+    @field_validator("model_cfg")
+    @classmethod
+    def base_url_must_be_safe(cls, v: dict[str, Any]) -> dict[str, Any]:
+        base_url = v.get("base_url", "")
+        if base_url and not _is_safe_url(base_url):
+            raise ValueError(f"base_url '{base_url}' is not allowed (private/internal network)")
+        return v
+
 
 class KeyVerifyRequest(BaseModel):
     wrapped_dek: str
@@ -33,6 +67,13 @@ class KeyVerifyRequest(BaseModel):
     encrypted_key: str
     access_key_id: str | None = None
     region: str | None = None
+
+    @field_validator("base_url")
+    @classmethod
+    def base_url_must_be_safe(cls, v: str) -> str:
+        if not _is_safe_url(v):
+            raise ValueError(f"base_url '{v}' is not allowed (private/internal network)")
+        return v
 
 
 class GenerateDEKRequest(BaseModel):

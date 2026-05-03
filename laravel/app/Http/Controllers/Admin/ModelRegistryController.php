@@ -55,7 +55,7 @@ class ModelRegistryController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $model = ModelRegistry::create($request->all());
+        $model = ModelRegistry::create($validator->validated());
 
         $this->logOperation($request, 'model_registry', 'create', $model->id, null, $model->toArray());
 
@@ -91,7 +91,7 @@ class ModelRegistryController extends Controller
         }
 
         $old = $model->toArray();
-        $model->update($request->all());
+        $model->update($validator->validated());
 
         $this->logOperation($request, 'model_registry', 'update', $model->id, $old, $model->fresh()->toArray());
 

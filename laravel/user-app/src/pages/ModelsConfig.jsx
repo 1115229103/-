@@ -14,6 +14,7 @@ export default function ModelsConfig() {
   const [models, setModels] = useState([]);
   const [configs, setConfigs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [modal, setModal] = useState(null);
   const [apiKey, setApiKey] = useState('');
   const [saving, setSaving] = useState(false);
@@ -21,15 +22,19 @@ export default function ModelsConfig() {
   const [verifyMsg, setVerifyMsg] = useState({});
 
   useEffect(() => {
-    api.get('/models/categories').then(({ data }) => {
-      const cats = Object.keys(data.data || {});
+    Promise.all([
+      api.get('/models/categories'),
+      api.get('/user/model-configs'),
+    ]).then(([catRes, cfgRes]) => {
+      const cats = Object.keys(catRes.data.data || {});
       setCategories(cats);
       if (cats.length > 0) setSelectedCat(cats[0]);
-    }).catch(() => {});
-    api.get('/user/model-configs').then(({ data }) => {
-      setConfigs(data.data || []);
-    }).catch(() => {});
-    setLoading(false);
+      setConfigs(cfgRes.data.data || []);
+    }).catch(() => {
+      setLoadError('加载失败，请检查网络后刷新页面');
+    }).finally(() => {
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -62,10 +67,21 @@ export default function ModelsConfig() {
     }
   };
 
+  useEffect(() => {
+    if (!modal) return;
+    const onKey = (e) => { if (e.key === 'Escape') { setModal(null); setError(''); setApiKey(''); } };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [modal]);
+
   const handleDelete = async (configId) => {
-    await api.delete(`/user/model-configs/${configId}`).catch(() => {});
-    const { data } = await api.get('/user/model-configs');
-    setConfigs(data.data || []);
+    try {
+      await api.delete(`/user/model-configs/${configId}`);
+      const { data } = await api.get('/user/model-configs');
+      setConfigs(data.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || '删除失败，请重试');
+    }
   };
 
   const handleVerify = async (configId) => {
@@ -86,6 +102,8 @@ export default function ModelsConfig() {
         <h2>模型与 API Key 配置</h2>
         <p style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>选择各环节想用的AI模型，填写自己的API Key</p>
       </header>
+
+      {loadError && <div style={{color:'var(--error)',padding:'12px 16px',background:'rgba(220,53,69,0.08)',borderRadius:'8px',marginBottom:16}}>{loadError}</div>}
 
       <div className="mc-categories">
         {categories.map((cat) => (
@@ -176,8 +194,9 @@ export default function ModelsConfig() {
         <div className="modal-overlay" onClick={() => { setModal(null); setError(''); setApiKey(''); }}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <h3>配置 {modal.name}</h3>
-            <label style={{marginTop:12}}>API Key</label>
+            <label htmlFor="apikey-input" style={{marginTop:12}}>API Key</label>
             <input
+              id="apikey-input"
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}

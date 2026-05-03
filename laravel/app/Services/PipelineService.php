@@ -180,6 +180,6 @@ class PipelineService
                 'custom_params'  => $config->custom_params,
             ],
             'stage_input' => $input,
-        ])->throw()->json();
+        ])->retry(3, 100)->throw()->json();
     }
 }

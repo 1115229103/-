@@ -26,8 +26,12 @@ export default function WorkDetail() {
         const p = await api.get(`/works/${id}/pipeline/progress`);
         setProgress(p.data.data);
       }
-    } catch {
-      navigate('/dashboard');
+    } catch (e) {
+      if (e.response?.status === 404) {
+        navigate('/dashboard');
+      } else {
+        setError('加载失败，请检查网络后刷新页面');
+      }
     } finally {
       setLoading(false);
     }

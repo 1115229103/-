@@ -38,6 +38,9 @@ const catLabels = {
           <td><span class="badge" :class="s.is_enabled ? 'success' : 'error'">{{ s.is_enabled ? '启用' : '禁用' }}</span></td>
           <td style="font-size:0.85rem;color:var(--text-muted)">{{ s.description }}</td>
         </tr>
+        <tr v-if="stages.length === 0">
+          <td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px">暂无环节配置</td>
+        </tr>
       </tbody>
     </table>
   </div>

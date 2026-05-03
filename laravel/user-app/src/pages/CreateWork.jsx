@@ -44,8 +44,8 @@ export default function CreateWork() {
         <h2>新建作品</h2>
         {errors.general && <div className="alert error">{errors.general}</div>}
 
-        <label>作品名称</label>
-        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="输入作品名称" />
+        <label htmlFor="work-title">作品名称</label>
+        <input id="work-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="输入作品名称" />
         {errors.title && <span className="field-error">{errors.title[0]}</span>}
 
         <label>风格</label>

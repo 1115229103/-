@@ -10,6 +10,14 @@ const saving = ref(false);
 
 const editForm = ref({ system_prompt: '', user_prompt_template: '', output_schema: '' });
 
+function safeJsonParse(s) {
+  if (!s || !s.trim()) return null;
+  try { return JSON.parse(s); } catch {
+    alert('输出 Schema JSON格式错误，请检查');
+    throw new Error('Invalid JSON');
+  }
+}
+
 const stageLabels = {
   script_analysis: '环节1 · 文案解析',
   storyboard: '环节2 · 分镜规划',
@@ -55,7 +63,7 @@ async function saveEdit(stage) {
     const payload = {
       system_prompt: editForm.value.system_prompt,
       user_prompt_template: editForm.value.user_prompt_template,
-      output_schema: editForm.value.output_schema ? JSON.parse(editForm.value.output_schema) : null,
+      output_schema: safeJsonParse(editForm.value.output_schema),
     };
     const { data } = await api.put(`/admin/prompt-templates/${stage}`, payload);
     // Update local cache

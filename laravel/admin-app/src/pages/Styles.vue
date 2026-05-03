@@ -29,6 +29,9 @@ onMounted(async () => {
           <td><span class="badge" :class="s.status === 'active' ? 'success' : 'error'">{{ s.status === 'active' ? '启用' : '禁用' }}</span></td>
           <td>{{ s.sort_order }}</td>
         </tr>
+        <tr v-if="styles.length === 0">
+          <td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">暂无风格预设</td>
+        </tr>
       </tbody>
     </table>
   </div>

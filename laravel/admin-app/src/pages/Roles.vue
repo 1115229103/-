@@ -4,6 +4,7 @@ import api from '../api.js';
 
 const users = ref([]);
 const loading = ref(true);
+const actionError = ref('');
 
 onMounted(async () => {
   try {
@@ -14,17 +15,23 @@ onMounted(async () => {
 });
 
 async function toggleRole(user) {
+  actionError.value = '';
   const newRole = user.role === 'admin' ? 'user' : 'admin';
+  const prevRole = user.role;
+  user.role = newRole;
   try {
     await api.put(`/admin/roles/${user.id}`, { role: newRole });
-    user.role = newRole;
-  } catch {}
+  } catch (e) {
+    user.role = prevRole;
+    actionError.value = '操作失败: ' + (e.response?.data?.message || '请重试');
+  }
 }
 </script>
 
 <template>
   <div>
     <h2 style="margin-bottom:20px">权限管理</h2>
+    <div v-if="actionError" style="color:var(--error);margin-bottom:12px;padding:8px 12px;background:rgba(220,53,69,0.08);border-radius:6px;font-size:0.9rem">{{ actionError }}</div>
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
     <table v-else class="data-table">
       <thead><tr><th>ID</th><th>用户</th><th>邮箱</th><th>角色</th><th>注册时间</th><th>操作</th></tr></thead>

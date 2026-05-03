@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue';
 import api from '../api.js';
 
 const models = ref([]);
@@ -59,6 +59,17 @@ async function load() {
 
 onMounted(load);
 
+function onKeydown(e) {
+  if (e.key === 'Escape' && showModal.value) {
+    showModal.value = false;
+  }
+}
+watch(showModal, (v) => {
+  if (v) document.addEventListener('keydown', onKeydown);
+  else document.removeEventListener('keydown', onKeydown);
+});
+onUnmounted(() => document.removeEventListener('keydown', onKeydown));
+
 function catFilter(cat) { selectedCat.value = cat; load(); }
 
 function openCreate() {
@@ -86,7 +97,18 @@ function openEdit(m) {
   showModal.value = true;
 }
 
+function safeJsonParse(s, label) {
+  if (!s || !s.trim()) return null;
+  try { return JSON.parse(s); } catch {
+    throw new Error(label + ' JSON格式错误，请检查');
+  }
+}
+
 async function saveModel() {
+  if (!form.model_name.trim() || !form.display_name.trim() || !form.provider.trim() || !form.base_url.trim()) {
+    alert('请填写所有必填字段（模型标识、显示名称、提供商、Base URL）');
+    return;
+  }
   saving.value = true;
   try {
     const payload = {
@@ -97,8 +119,8 @@ async function saveModel() {
       api_type: form.api_type,
       base_url: form.base_url,
       request_path: form.request_path || null,
-      default_params: form.default_params ? JSON.parse(form.default_params) : null,
-      required_fields: form.required_fields ? JSON.parse(form.required_fields) : null,
+      default_params: safeJsonParse(form.default_params, '默认参数'),
+      required_fields: safeJsonParse(form.required_fields, '必填字段'),
       description: form.description || null,
       docs_url: form.docs_url || null,
       logo_url: form.logo_url || null,
@@ -125,7 +147,9 @@ async function toggleStatus(m) {
   try {
     const { data } = await api.put(`/admin/models/${m.id}/status`);
     m.status = data.data.status;
-  } catch {}
+  } catch (e) {
+    alert('操作失败: ' + (e.response?.data?.message || '请重试'));
+  }
 }
 
 async function deleteModel(m) {
@@ -133,7 +157,9 @@ async function deleteModel(m) {
   try {
     await api.delete(`/admin/models/${m.id}`);
     models.value = models.value.filter(x => x.id !== m.id);
-  } catch {}
+  } catch (e) {
+    alert('删除失败: ' + (e.response?.data?.message || '请重试'));
+  }
 }
 
 const catLabel = (v) => categories.find(c => c.value === v)?.label || v;

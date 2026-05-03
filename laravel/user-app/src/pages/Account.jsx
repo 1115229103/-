@@ -7,6 +7,7 @@ export default function Account() {
   const [membership, setMembership] = useState(null);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,7 +21,9 @@ export default function Account() {
       setUser(u.data.data || u.data);
       setMembership(m.data.data || m.data);
       setPlans(p.data.data || []);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => {
+      setError('加载失败，请检查网络后刷新页面');
+    }).finally(() => setLoading(false));
   }, []);
 
   const handleLogout = async () => {
@@ -31,6 +34,7 @@ export default function Account() {
   };
 
   if (loading) return <div className="dashboard"><main><p style={{color:'var(--text-muted)'}}>加载中...</p></main></div>;
+  if (error) return <div className="dashboard"><main><p style={{color:'var(--error)',padding:'12px 0'}}>{error}</p><Link to="/dashboard" className="btn small">返回首页</Link></main></div>;
 
   const currentPlan = membership?.plan || { name: '免费版', tier: 'free' };
   const currentTier = currentPlan.tier || 'free';

@@ -106,3 +106,36 @@ label { display: block; margin-bottom: 4px; color: var(--text-h); font-size: 0.8
 .badge.warning { background: rgba(251,191,36,0.15); color: #fbbf24; }
 .badge.error { background: rgba(248,113,113,0.15); color: #f87171; }
 .badge.info { background: rgba(99,102,241,0.15); color: #818cf8; }
+
+/* Focus indicators for keyboard navigation */
+.btn:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.sidebar-nav a:focus-visible { outline-offset: -2px; }
+
+/* Logout link */
+.logout-link:hover { text-decoration: underline; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-layout { flex-direction: column; }
+  .sidebar { width: 100%; min-width: 100%; max-height: auto; flex-shrink: 0; }
+  .sidebar-nav { display: flex; flex-wrap: wrap; padding: 8px; gap: 4px; }
+  .sidebar-nav .nav-section { display: none; }
+  .sidebar-nav a { padding: 6px 12px; font-size: 0.8rem; border-left: none; border-radius: var(--radius); }
+  .sidebar-footer { display: none; }
+  .top-bar { padding: 8px 16px; min-height: 44px; }
+  .page-body { padding: 16px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { padding: 14px; }
+  .stat-card .stat-value { font-size: 1.5rem; }
+  .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+  .card-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .sidebar-logo h1 { font-size: 0.95rem; }
+  .sidebar-nav a { font-size: 0.75rem; padding: 4px 8px; }
+}

@@ -30,6 +30,9 @@ onMounted(async () => {
           <td><span class="badge" :class="a.status === 'active' ? 'success' : 'error'">{{ a.status === 'active' ? '启用' : '禁用' }}</span></td>
           <td>{{ a.sort_order }}</td>
         </tr>
+        <tr v-if="actions.length === 0">
+          <td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px">暂无动作模板</td>
+        </tr>
       </tbody>
     </table>
   </div>

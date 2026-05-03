@@ -29,6 +29,9 @@ onMounted(async () => {
           <td>{{ a.file_size ? (a.file_size / 1024).toFixed(1) + ' KB' : '—' }}</td>
           <td><span class="badge" :class="a.status === 'active' ? 'success' : 'error'">{{ a.status === 'active' ? '启用' : '禁用' }}</span></td>
         </tr>
+        <tr v-if="assets.length === 0">
+          <td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">暂无素材</td>
+        </tr>
       </tbody>
     </table>
   </div>

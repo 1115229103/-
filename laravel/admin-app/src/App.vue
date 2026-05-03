@@ -1,7 +1,15 @@
 <script setup>
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
+const router = useRouter();
+const adminUser = JSON.parse(localStorage.getItem('admin_user') || 'null');
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  localStorage.removeItem('admin_user');
+  router.push('/login');
+}
 
 const navSections = [
   {
@@ -81,7 +89,11 @@ const navSections = [
           </router-link>
         </template>
       </nav>
-      <div class="sidebar-footer">v1.0.0</div>
+      <div class="sidebar-footer">
+        <span v-if="adminUser" style="display:block;margin-bottom:4px;font-size:0.8rem">{{ adminUser.name }}</span>
+        <span v-if="adminUser" class="logout-link" @click="logout" style="cursor:pointer;font-size:0.75rem;color:var(--accent)">退出登录</span>
+        <span style="display:block;margin-top:8px;font-size:0.7rem;color:var(--text-muted)">v1.0.0</span>
+      </div>
     </aside>
     <div class="main-content">
       <div class="top-bar">

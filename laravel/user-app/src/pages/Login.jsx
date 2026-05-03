@@ -30,10 +30,10 @@ export default function Login() {
       <form onSubmit={handleSubmit} className="auth-form">
         <h2>登录 AIStory</h2>
         {error && <div className="alert error">{error}</div>}
-        <label>邮箱</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <label>密码</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+        <label htmlFor="login-email">邮箱</label>
+        <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <label htmlFor="login-password">密码</label>
+        <input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
         <button type="submit" disabled={loading} className="btn primary full">
           {loading ? '登录中...' : '登录'}
         </button>

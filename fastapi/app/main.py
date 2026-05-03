@@ -40,6 +40,10 @@ async def lifespan(app: FastAPI):
         logger.error("FATAL: MASTER_KEK matches a known-weak pattern. Refusing to start.")
         raise RuntimeError("MASTER_KEK must not use the example default value")
 
+    if any(w in settings.INTERNAL_API_TOKEN.lower() for w in weak_defaults):
+        logger.error("FATAL: INTERNAL_API_TOKEN matches a known-weak pattern. Refusing to start.")
+        raise RuntimeError("INTERNAL_API_TOKEN must not use the example default value")
+
     logger.info("AIStory FastAPI Gateway starting...")
     yield
     # Shutdown
@@ -90,9 +94,9 @@ async def health():
     except Exception:
         pass
 
-    status_code = 200 if db_ok and redis_ok else 503
+    degraded = not db_ok or not redis_ok
     return {
-        "status": "ok" if status_code == 200 else "degraded",
+        "status": "degraded" if degraded else "ok",
         "service": "AIStory AI Gateway",
         "version": "0.1.0",
         "checks": {
