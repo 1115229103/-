@@ -24,6 +24,50 @@ Route::middleware('throttle:120,1')->group(function () {
         ]);
     });
 
+    Route::get('/health/deep', function () {
+        $checks = [];
+        $healthy = true;
+
+        // DB check
+        try {
+            \Illuminate\Support\Facades\DB::connection()->getPdo();
+            $checks['database'] = ['status' => 'ok', 'driver' => DB::connection()->getDriverName()];
+        } catch (\Exception $e) {
+            $checks['database'] = ['status' => 'error', 'message' => $e->getMessage()];
+            $healthy = false;
+        }
+
+        // Redis check
+        try {
+            \Illuminate\Support\Facades\Redis::connection()->ping();
+            $checks['redis'] = ['status' => 'ok'];
+        } catch (\Exception $e) {
+            $checks['redis'] = ['status' => 'error', 'message' => $e->getMessage()];
+            $healthy = false;
+        }
+
+        // FastAPI check
+        try {
+            $fastapiUrl = rtrim(env('FASTAPI_URL', 'http://localhost:8001'), '/');
+            $resp = \Illuminate\Support\Facades\Http::timeout(5)->get($fastapiUrl . '/health');
+            $checks['fastapi'] = $resp->successful()
+                ? ['status' => 'ok', 'code' => $resp->status()]
+                : ['status' => 'error', 'code' => $resp->status()];
+            if (!$resp->successful()) $healthy = false;
+        } catch (\Exception $e) {
+            $checks['fastapi'] = ['status' => 'error', 'message' => $e->getMessage()];
+            $healthy = false;
+        }
+
+        return response()->json([
+            'status' => $healthy ? 'ok' : 'degraded',
+            'service' => 'AIStory API',
+            'version' => '1.0.0',
+            'timestamp' => now()->toIso8601String(),
+            'checks' => $checks,
+        ], $healthy ? 200 : 503);
+    });
+
     Route::post('/auth/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::post('/auth/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
 
