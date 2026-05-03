@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 84
+## Current Iteration: 85
 
 ## Verify Command
 All seven test suites must pass with 0 failures:
@@ -143,6 +143,28 @@ Fundamentally different: previous iterations only touched backend/API/infra.
 - Both frontends rebuild successfully (user-app 300KB, admin-app 194KB)
 - All 7 test suites: 241/0/0 ✅
 - 5-minute autonomous cron loop activated
+
+## Iteration 85 — Chinese Validation Localization (+163 lines, 1 file)
+
+### Approach: UX localization audit — simulate every validation error
+Fundamentally different: checked what real users see when they make mistakes.
+Found that locale was zh_CN but NO translation files existed → Laravel
+fell back to English "The name field is required." for ALL validation errors.
+Chinese product with English error messages = broken UX.
+
+### Changes
+- **lang/zh_CN/validation.php** — 100+ validation rules translated to Chinese
+- Custom attribute names: 姓名/邮箱/密码/标题/API Key/视频时长/环节/模型/套餐 等
+- Examples of before→after:
+  - "The name field is required." → "姓名不能为空。"
+  - "The email field must be a valid email address." → "邮箱格式不正确。"
+  - "The password field must be at least 8 characters." → "密码不能少于8个字符。"
+  - "The title field is required." → "标题不能为空。"
+  - "The selected model_registry_id is invalid." → "所选模型不存在。"
+
+### Verification
+- All 7 test suites: 207/0/0 ✅
+- All validation endpoints return Chinese messages ✅
 
 ## Oracle Rules
 1. ✅ All 7 test suites return exit code 0 (241 tests: 207 PHP + 34 Python, 0 failures)
