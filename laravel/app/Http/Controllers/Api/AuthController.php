@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\User;
+use App\Models\Membership;
+use App\Models\Plan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -48,6 +50,17 @@ class AuthController extends Controller
             'password'    => Hash::make($request->password),
             'wrapped_dek' => $wrappedDek,
         ]);
+
+        // Auto-assign free plan membership
+        $freePlan = Plan::where('slug', 'free')->first();
+        if ($freePlan && !Membership::where('user_id', $user->id)->exists()) {
+            Membership::create([
+                'user_id' => $user->id,
+                'plan_id' => $freePlan->id,
+                'status'  => 'active',
+                'starts_at' => now(),
+            ]);
+        }
 
         $token = $user->createToken('api-token')->plainTextToken;
 
