@@ -144,12 +144,18 @@ async function saveModel() {
   saving.value = false;
 }
 
+const toggling = ref(null);
+
 async function toggleStatus(m) {
+  if (toggling.value) return;
+  toggling.value = m.id;
   try {
     const { data } = await api.put(`/admin/models/${m.id}/status`);
     m.status = data.data.status;
   } catch (e) {
     alert('操作失败: ' + (e.response?.data?.message || '请重试'));
+  } finally {
+    toggling.value = null;
   }
 }
 
@@ -217,8 +223,8 @@ const catLabel = (v) => categories.find(c => c.value === v)?.label || v;
           </td>
           <td style="display:flex;gap:4px">
             <button class="btn small" @click="openEdit(m)" title="编辑">✎</button>
-            <button class="btn small" @click="toggleStatus(m)" :title="m.status === 'active' ? '禁用' : '启用'">
-              {{ m.status === 'active' ? '⊘' : '✓' }}
+            <button class="btn small" @click="toggleStatus(m)" :disabled="toggling !== null" :title="m.status === 'active' ? '禁用' : '启用'">
+              {{ toggling === m.id ? '...' : (m.status === 'active' ? '⊘' : '✓') }}
             </button>
             <button class="btn small danger" @click="deleteModel(m)" title="删除">✕</button>
           </td>
