@@ -7,6 +7,7 @@ const loading = ref(true);
 const filterStatus = ref('pending_review');
 const actionError = ref('');
 const actionLoading = ref(null);
+const loadError = ref('');
 
 const statuses = [
   { value: 'pending_review', label: '待审核' },
@@ -20,7 +21,7 @@ async function load() {
   try {
     const { data } = await api.get('/admin/review/works', { params: { status: filterStatus.value } });
     works.value = data.data?.data || data.data || [];
-  } catch { works.value = []; }
+  } catch { works.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 }
 
@@ -57,7 +58,8 @@ async function reject(id) {
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
       <button v-for="s in statuses" :key="s.value" :class="'btn small ' + (filterStatus === s.value ? 'primary' : 'secondary')" @click="filterStatus = s.value; load()">{{ s.label }}</button>
     </div>
-    <div v-if="actionError" style="color:var(--error);margin-bottom:12px;padding:8px 12px;background:rgba(220,53,69,0.08);border-radius:6px;font-size:0.9rem">{{ actionError }}</div>
+    <div v-if="actionError" class="error-banner">{{ actionError }}</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
     <table v-else class="data-table">
       <thead><tr><th>ID</th><th>标题</th><th>作者</th><th>风格</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>

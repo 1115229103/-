@@ -4,6 +4,7 @@ import api from '../api.js';
 
 const templates = ref([]);
 const loading = ref(true);
+const loadError = ref('');
 const expanded = ref(null);
 const editing = ref(null); // stage being edited
 const saving = ref(false);
@@ -37,7 +38,7 @@ onMounted(async () => {
   try {
     const { data } = await api.get('/admin/prompt-templates');
     templates.value = data.data || [];
-  } catch { templates.value = []; }
+  } catch { templates.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 
@@ -85,6 +86,7 @@ async function saveEdit(stage) {
     </div>
 
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
 
     <div v-else class="configs-list">
       <div

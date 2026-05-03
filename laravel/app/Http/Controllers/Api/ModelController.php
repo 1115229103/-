@@ -103,9 +103,10 @@ class ModelController extends Controller
 
         $user = $request->user();
         $model = ModelRegistry::findOrFail($request->model_registry_id);
+        $rawKey = $request->api_key;
 
         // Encrypt the API key via FastAPI
-        $encryptedKey = $this->encryptKeyViaFastAPI($user->wrapped_dek, $request->api_key);
+        $encryptedKey = $this->encryptKeyViaFastAPI($user->wrapped_dek, $rawKey);
         if (!$encryptedKey) {
             return response()->json(['error' => 'Key encryption failed'], 500);
         }
@@ -127,9 +128,14 @@ class ModelController extends Controller
 
         return response()->json([
             'data' => [
-                'id'     => $config->id,
-                'stage'  => $config->stage,
-                'status' => $config->status,
+                'id'                 => $config->id,
+                'stage'              => $config->stage,
+                'status'             => $config->status,
+                'category'           => $config->category,
+                'api_key_masked'     => '****' . substr($rawKey, -4),
+                'model_display_name' => $model->display_name,
+                'provider'           => $model->provider,
+                'api_type'           => $model->api_type,
             ],
         ], 201);
     }
@@ -151,8 +157,10 @@ class ModelController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $updatedKey = null;
         if ($request->has('api_key')) {
-            $config->api_key = $this->encryptKeyViaFastAPI($request->user()->wrapped_dek, $request->api_key);
+            $updatedKey = $request->api_key;
+            $config->api_key = $this->encryptKeyViaFastAPI($request->user()->wrapped_dek, $updatedKey);
         }
         if ($request->has('custom_params')) {
             $config->custom_params = $request->custom_params;
@@ -162,7 +170,11 @@ class ModelController extends Controller
         }
         $config->save();
 
-        return response()->json(['data' => ['id' => $config->id, 'status' => $config->status]]);
+        $data = ['id' => $config->id, 'status' => $config->status];
+        if ($updatedKey !== null) {
+            $data['api_key_masked'] = '****' . substr($updatedKey, -4);
+        }
+        return response()->json(['data' => $data]);
     }
 
     /**

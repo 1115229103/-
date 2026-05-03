@@ -8,52 +8,46 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 29
+## Current Iteration: 31
 
 ## Verify Command
-Both test suites must pass:
+All three test suites must pass:
 - api_smoke.php (24 tests, exit 0)
 - admin_api_smoke.php (22 tests, exit 0)
 - e2e.php (32 tests, exit 0)
 
 ## Oracle Rules
 1. ✅ Both test files must return exit code 0
-2. ✅ Frontend must be scaffolded and buildable (admin 184.9KB + user 298.5KB)
+2. ✅ Frontend must be scaffolded and buildable (admin 187.4KB + user 298.5KB)
 3. ✅ Queue worker config must exist
-4. ✅ Git repo must be initialized — 6 commits, clean tree
+4. ✅ Git repo must be initialized — commits, clean tree, all changes committed
 5. ✅ Rate limiting must be configured
 6. ✅ API docs must exist
 7. ✅ e2e.php (32 tests, exit 0, 0 WARNs)
 
-## Iteration 29 Improvements — Production Readiness (底层逻辑补全)
+## Iteration 31 — UX Production Hardening
 
-### BLOCKER: Admin User Seeder (was: NO way to create first admin user)
-- Created database/seeders/UserSeeder.php:
-  - admin@aistory.dev / Admin123456 (admin role, auto-assigned free plan)
-  - demo@aistory.dev / Demo123456 (user role, auto-assigned free plan)
-  - Uses firstOrCreate (idempotent)
-- Registered in DatabaseSeeder.php
+### api_key_masked in model config responses
+- Fixed storeConfig(): now returns api_key_masked, category, model_display_name, provider, api_type
+- Fixed updateConfig(): returns api_key_masked when API key is updated
+- Updated api_smoke.php: validates api_key_masked starts with '****' in create response
 
-### BLOCKER: Password Reset Flow (was: NO forgot/reset password at all)
-- Created PasswordResetLinkController: POST /auth/forgot-password
-  - Anti-enumeration (always returns success)
-  - Returns token in dev mode for testing
-  - 60-minute token expiry
-  - SHA-256 hashed tokens in DB
-- Created NewPasswordController: POST /auth/reset-password
-  - Validates token hash + expiry
-  - Revokes all existing Sanctum tokens on reset (security)
-  - Password confirmation required
-- Verified end-to-end: request → reset → old pw rejected → new pw works
+### Admin error state differentiation (19 pages)
+- Added loadError ref to all 19 admin list pages + Dashboard
+- Silent `catch { x.value = []; }` → `catch { x.value = []; loadError.value = '...'; }`
+- Added `.error-banner` CSS class in style.css
+- Error banners displayed above tables when API load fails
+- Users can now distinguish "no data" from "server error"
 
-### SECURITY: URL Validation on File/Image Fields
-- AssetController: file_url now validated as `url:http,https` (prevents javascript: XSS)
-- BannerController: image_url + link_url now validated as `url:http,https`
-- SystemController: logo_url, favicon_url, oss_endpoint → url:http,https; contact_email → email
-- ALLOWED_KEYS whitelist with type-aware validation
+### INTERNAL_API_TOKEN hardening
+- Removed weak default from services.php (was 'internal-secret-token' fallback)
+- Updated Laravel .env and FastAPI .env with strong 64-char hex token
+- FastAPI startup check already blocks 'internal-secret-token' pattern
+- api_smoke.php now reads token from .env instead of hardcoding
 
 ### Build artifacts
-- admin-app: 184.89 KB JS, user-app: 298.53 KB JS
+- admin-app: 187.40 KB JS + 8.33 KB CSS
+- user-app: 298.53 KB JS + 8.54 KB CSS
 - All 78 tests passing (24 API + 22 Admin + 32 E2E)
 
-## Status: ALL ORACLE RULES SATISFIED — CONTINUOUS IMPROVEMENT ACTIVE
+## Status: ALL 7 ORACLE RULES SATISFIED — ITERATING ON UX + SECURITY

@@ -4,6 +4,7 @@ import api from '../api.js';
 
 const plans = ref([]);
 const loading = ref(true);
+const loadError = ref('');
 const showModal = ref(false);
 const editing = ref(null);
 const saving = ref(false);
@@ -23,7 +24,7 @@ onMounted(async () => {
   try {
     const { data } = await api.get('/admin/plans');
     plans.value = data.data || [];
-  } catch { plans.value = []; }
+  } catch { plans.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 
@@ -123,6 +124,7 @@ async function deletePlan(p) {
     </div>
 
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
 
     <table v-else class="data-table">
       <thead>

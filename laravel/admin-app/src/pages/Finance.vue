@@ -4,12 +4,13 @@ import api from '../api.js';
 
 const report = ref({});
 const loading = ref(true);
+const loadError = ref('');
 
 onMounted(async () => {
   try {
     const { data } = await api.get('/admin/finance/report');
     report.value = data.data || data || {};
-  } catch { report.value = {}; }
+  } catch { report.value = {}; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 </script>
@@ -18,6 +19,7 @@ onMounted(async () => {
   <div>
     <h2 style="margin-bottom:20px">财务报表</h2>
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <div v-else>
       <div class="stats-grid" style="margin-bottom:20px">
         <div class="stat-card">

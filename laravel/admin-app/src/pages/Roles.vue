@@ -4,13 +4,14 @@ import api from '../api.js';
 
 const users = ref([]);
 const loading = ref(true);
+const loadError = ref('');
 const actionError = ref('');
 
 onMounted(async () => {
   try {
     const { data } = await api.get('/admin/roles');
     users.value = data.data?.data || data.data || [];
-  } catch { users.value = []; }
+  } catch { users.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 
@@ -31,7 +32,8 @@ async function toggleRole(user) {
 <template>
   <div>
     <h2 style="margin-bottom:20px">权限管理</h2>
-    <div v-if="actionError" style="color:var(--error);margin-bottom:12px;padding:8px 12px;background:rgba(220,53,69,0.08);border-radius:6px;font-size:0.9rem">{{ actionError }}</div>
+    <div v-if="actionError" class="error-banner">{{ actionError }}</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
     <table v-else class="data-table">
       <thead><tr><th>ID</th><th>用户</th><th>邮箱</th><th>角色</th><th>注册时间</th><th>操作</th></tr></thead>

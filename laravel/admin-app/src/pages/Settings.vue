@@ -5,6 +5,7 @@ import api from '../api.js';
 const watermark = ref(null);
 const system = ref({});
 const loading = ref(true);
+const loadError = ref('');
 
 onMounted(async () => {
   try {
@@ -14,7 +15,7 @@ onMounted(async () => {
     ]);
     watermark.value = w.data.data || w.data;
     system.value = s.data.data || s.data;
-  } catch {}
+  } catch { loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 </script>
@@ -24,6 +25,7 @@ onMounted(async () => {
     <h2 style="margin-bottom:20px">系统设置</h2>
 
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
 
     <div v-else>
       <div class="card" style="margin-bottom:20px">

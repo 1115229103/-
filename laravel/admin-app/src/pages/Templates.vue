@@ -4,12 +4,13 @@ import api from '../api.js';
 
 const templates = ref([]);
 const loading = ref(true);
+const loadError = ref('');
 
 onMounted(async () => {
   try {
     const { data } = await api.get('/admin/templates');
     templates.value = data.data || [];
-  } catch { templates.value = []; }
+  } catch { templates.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 </script>
@@ -18,6 +19,7 @@ onMounted(async () => {
   <div>
     <h2 style="margin-bottom:20px">模板管理</h2>
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <table v-else class="data-table">
       <thead><tr><th>ID</th><th>名称</th><th>类别</th><th>描述</th><th>状态</th><th>排序</th></tr></thead>
       <tbody>

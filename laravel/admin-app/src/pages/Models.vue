@@ -4,6 +4,7 @@ import api from '../api.js';
 
 const models = ref([]);
 const loading = ref(true);
+const loadError = ref('');
 const selectedCat = ref('');
 const showModal = ref(false);
 const editing = ref(null); // null = create, object = edit
@@ -53,7 +54,7 @@ async function load() {
     const params = selectedCat.value ? `?category=${selectedCat.value}` : '';
     const { data } = await api.get(`/admin/models${params}`);
     models.value = data.data || [];
-  } catch { models.value = []; }
+  } catch { models.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 }
 
@@ -187,6 +188,7 @@ const catLabel = (v) => categories.find(c => c.value === v)?.label || v;
 
     <!-- Table -->
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <table v-else class="data-table">
       <thead>
         <tr>

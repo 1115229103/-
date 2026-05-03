@@ -4,12 +4,13 @@ import api from '../api.js';
 
 const assets = ref([]);
 const loading = ref(true);
+const loadError = ref('');
 
 onMounted(async () => {
   try {
     const { data } = await api.get('/admin/assets');
     assets.value = data.data || [];
-  } catch { assets.value = []; }
+  } catch { assets.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 </script>
@@ -18,6 +19,7 @@ onMounted(async () => {
   <div>
     <h2 style="margin-bottom:20px">素材管理</h2>
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <table v-else class="data-table">
       <thead><tr><th>ID</th><th>名称</th><th>类型</th><th>标签</th><th>大小</th><th>状态</th></tr></thead>
       <tbody>

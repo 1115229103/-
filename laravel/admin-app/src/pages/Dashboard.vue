@@ -4,6 +4,7 @@ import api from '../api.js';
 
 const stats = ref({ users: 0, works: 0, models: 0, orders: 0 });
 const loading = ref(true);
+const loadError = ref('');
 
 onMounted(async () => {
   try {
@@ -16,7 +17,7 @@ onMounted(async () => {
       orders: d.today_works ?? 0,
     };
   } catch (e) {
-    // API not yet available — show zero state
+    loadError.value = '加载失败，请检查网络后重试';
   } finally {
     loading.value = false;
   }
@@ -26,6 +27,7 @@ onMounted(async () => {
 <template>
   <div class="page-dashboard">
     <h2 style="margin-bottom:20px">仪表盘</h2>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-label">用户总数</div>

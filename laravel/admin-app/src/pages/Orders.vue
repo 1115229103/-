@@ -4,12 +4,13 @@ import api from '../api.js';
 
 const orders = ref([]);
 const loading = ref(true);
+const loadError = ref('');
 
 onMounted(async () => {
   try {
     const { data } = await api.get('/admin/orders');
     orders.value = data.data?.data || data.data || [];
-  } catch { orders.value = []; }
+  } catch { orders.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 </script>
@@ -18,6 +19,7 @@ onMounted(async () => {
   <div>
     <h2 style="margin-bottom:20px">订单管理</h2>
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <table v-else class="data-table">
       <thead>
         <tr><th>ID</th><th>用户</th><th>套餐</th><th>金额</th><th>状态</th><th>时间</th></tr>

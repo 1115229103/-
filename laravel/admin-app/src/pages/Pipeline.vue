@@ -4,12 +4,13 @@ import api from '../api.js';
 
 const stages = ref([]);
 const loading = ref(true);
+const loadError = ref('');
 
 onMounted(async () => {
   try {
     const { data } = await api.get('/admin/pipeline-stages');
     stages.value = data.data || [];
-  } catch { stages.value = []; }
+  } catch { stages.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 
@@ -24,6 +25,7 @@ const catLabels = {
   <div>
     <h2 style="margin-bottom:20px">环节配置</h2>
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <table v-else class="data-table">
       <thead>
         <tr><th>#</th><th>环节标识</th><th>名称</th><th>类别</th><th>必选</th><th>启用</th><th>描述</th></tr>

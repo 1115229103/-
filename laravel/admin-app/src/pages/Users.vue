@@ -4,12 +4,13 @@ import api from '../api.js';
 
 const users = ref([]);
 const loading = ref(true);
+const loadError = ref('');
 
 onMounted(async () => {
   try {
     const { data } = await api.get('/admin/users');
     users.value = data.data?.data || data.data || [];
-  } catch { users.value = []; }
+  } catch { users.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 });
 </script>
@@ -22,6 +23,7 @@ onMounted(async () => {
     </div>
 
     <div v-if="loading" style="color:var(--text-muted)">加载中...</div>
+    <div v-if="loadError" class="error-banner">{{ loadError }}</div>
     <table v-else class="data-table">
       <thead>
         <tr>

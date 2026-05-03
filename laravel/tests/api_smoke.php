@@ -54,7 +54,18 @@ function api(string $method, string $url, ?array $data = null, ?string $token = 
 }
 
 echo "=== AIStory API Test Suite ===\n\n";
-$fastapiHeaders = ['X-Internal-Token: internal-secret-token'];
+// Read internal token from .env (keep in sync with FASTAPI_INTERNAL_TOKEN)
+$envFile = __DIR__ . '/../.env';
+$envToken = '';
+if (file_exists($envFile)) {
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        if (str_starts_with(trim($line), 'FASTAPI_INTERNAL_TOKEN=')) {
+            $envToken = trim(substr($line, strpos($line, '=') + 1));
+            break;
+        }
+    }
+}
+$fastapiHeaders = ['X-Internal-Token: ' . ($envToken ?: 'internal-secret-token')];
 
 echo "--- FastAPI Health ---\n";
 test('FastAPI root', fn() => api('GET', "{$fastapi}/")['code'] === 200);
@@ -119,7 +130,10 @@ test('POST /user/model-configs (add key)', function() use ($base, $token, $llmMo
     ], $token);
     if ($r['code'] !== 201) return "Code {$r['code']}: " . json_encode($r['body']);
     $configId = $r['body']['data']['id'] ?? null;
-    return $configId ? true : 'Missing config id';
+    if (!$configId) return 'Missing config id';
+    $masked = $r['body']['data']['api_key_masked'] ?? null;
+    if (!$masked || !str_starts_with($masked, '****')) return 'Missing or invalid api_key_masked';
+    return true;
 });
 
 test('GET /user/model-configs (has one)', function() use ($base, $token) {
