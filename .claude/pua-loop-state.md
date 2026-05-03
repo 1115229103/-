@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 55
+## Current Iteration: 56
 
 ## Verify Command
 All four test suites must pass with 0 failures:
@@ -196,5 +196,25 @@ one-command deployment automation.
 - User journey: 24 passed, 0 failed
 - **Total: 111 tests, 0 failures, 0 warnings**
 - 43 commits, clean tree
+
+## Iteration 56 — Deep Health Check (+44 lines, 1 file)
+
+### Approach: Operations monitoring — fundamentally different
+Added /health/deep endpoint that verifies actual connectivity to all dependent
+services (DB, Redis, FastAPI). Returns 503 with "degraded" status if any
+dependency fails — ready for load balancer health checks and monitoring.
+
+### Changes
+- **routes/api.php** — Added `GET /api/v1/health/deep`: probes DB via getPdo(),
+  Redis via ping(), FastAPI via HTTP GET /health. Each check returns status+error
+  message. Aggregate status: "ok" (200) or "degraded" (503).
+
+### Build & Test Results
+- API tests: 32 passed, 0 failed
+- Admin tests: 22 passed, 0 failed
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- **Total: 111 tests, 0 failures, 0 warnings**
+- 45 commits, clean tree
 
 ## Status: ALL 7 ORACLE RULES SATISFIED — 111 TESTS GREEN, 0 WARNINGS
