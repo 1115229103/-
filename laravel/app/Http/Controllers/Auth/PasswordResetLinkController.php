@@ -33,9 +33,18 @@ class PasswordResetLinkController extends Controller
             'created_at' => now(),
         ]);
 
-        // In production: Mail::to($user)->send(new PasswordResetMail($token));
-        // For now, return the token in dev so it can be tested
-        $response = ['message' => 'Reset token generated.'];
+        // Build reset URL (frontend uses this to submit new password)
+        $resetUrl = rtrim(config('app.frontend_url', config('app.url')), '/') . '/user-app/reset-password?token=' . urlencode($token) . '&email=' . urlencode($request->email);
+
+        // Send password reset email via configured mailer
+        try {
+            \Illuminate\Support\Facades\Mail::to($user)->send(new \App\Mail\PasswordResetMail($token, $resetUrl));
+        } catch (\Throwable $e) {
+            report($e);
+            // Mail sending failed — still return token in non-production for testing
+        }
+
+        $response = ['message' => 'If that email exists, a reset token has been generated.'];
         // Return token in non-production envs or when APP_DEBUG=true
         if (!app()->environment('production') || config('app.debug')) {
             $response['token'] = $token;
