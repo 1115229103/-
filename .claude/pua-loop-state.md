@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 76
+## Current Iteration: 77
 
 ## Verify Command
 All six test suites must pass with 0 failures:
@@ -984,5 +984,56 @@ fallback defaults rather than actual membership data.
 - Python: 34 passed, 0 failed
 - **Total: 227 tests, 0 failures, 0 warnings**
 - 83 commits, clean tree
+
+## Iteration 77 — Frontend Scaffold + Queue + Seeds Audit (+46 lines, 1 file)
+
+### Approach: Structural completeness audit — fundamentally different
+All 29 prior iterations tested behavior (does it work?). This iteration audits
+structure (is it complete?). Checks: every frontend source file, queue config
+for dev/prod parity, seed data quality, rate limiter behavior, git hygiene.
+
+### Audit Results
+
+**Frontend Scaffolding**
+- User-app (React): 18 source files — 9 pages (Landing, Login, Register, Dashboard,
+  CreateWork, WorkDetail, Account, ModelsConfig, NotFound), 1 component (ErrorBoundary),
+  proper axios client with token interceptor + 401 redirect
+- Admin-app (Vue): 30 source files — 20 pages (Login, Dashboard, Users, Works, Models,
+  Pipeline, Prompts, Styles, Voices, Banners, Actions, Templates, Assets, Orders,
+  Plans, Roles, Review, Finance, Settings, SensitiveWords, Logs), 1 component
+  (Pagination), Vue Router with `/admin/` base
+- Both SPAs: relative `baseURL: '/api/v1'`, no hardcoded localhost
+
+**Queue Configuration**
+- Dev: `QUEUE_CONNECTION=sync` — correct (no worker needed)
+- Dev template: `QUEUE_CONNECTION=database` — correct (testable without Redis)
+- Production: `QUEUE_CONNECTION=redis` + `CACHE_STORE=redis` + `SESSION_DRIVER=redis`
+- Supervisor: 2 workers, `--timeout=600`, `--tries=3`, auto-restart, proper logging
+
+**Seed Data Quality**
+- 89 AI models across 10 categories
+- 4 subscription plans (free/basic/pro/enterprise)
+- 12 pipeline stages (all enabled)
+- `migrate:fresh --seed` — 16 migrations + 9 seeders, all green in ~200ms
+
+**Rate Limiting**
+- Guest: 30 req/min on public endpoints
+- Auth: 120 req/min
+- Localhost bypass for dev/test — verified working
+- TrustProxies middleware ensures correct client IP behind Nginx
+
+**Git Hygiene**
+- 85 commits, clean tree
+- .gitignore: PHP, Node, Python, IDE, OS, Docker, debug scripts
+- .gitattributes: cross-platform LF normalization (NEW)
+
+### Changes
+- **.gitattributes** — NEW, 46 lines: LF normalization for all text files
+
+### Build & Test Results
+- PHP: 32+24+33+24+41+39 = 193 passed, 0 failed
+- Python: 34 passed, 0 failed
+- **Total: 227 tests, 0 failures, 0 warnings**
+- 85 commits, clean tree
 
 ## Status: PRODUCTION READY — 227 TESTS GREEN, 0 WARNINGS, ALL CHECKS PASSED
