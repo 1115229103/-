@@ -50,6 +50,9 @@ async function toggleRole(user) {
             </button>
           </td>
         </tr>
+        <tr v-if="users.length === 0">
+          <td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">暂无用户数据</td>
+        </tr>
       </tbody>
     </table>
   </div>

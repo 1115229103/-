@@ -7,6 +7,7 @@ import ModelsConfig from './pages/ModelsConfig';
 import CreateWork from './pages/CreateWork';
 import WorkDetail from './pages/WorkDetail';
 import Account from './pages/Account';
+import NotFound from './pages/NotFound';
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem('token');
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/works/new" element={<RequireAuth><CreateWork /></RequireAuth>} />
         <Route path="/works/:id" element={<RequireAuth><WorkDetail /></RequireAuth>} />
         <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
