@@ -32,6 +32,7 @@ Route::middleware('throttle:120,1')->group(function () {
 
     Route::get('/models/categories', [ModelController::class, 'categories']);
     Route::get('/models', [ModelController::class, 'index']);
+    Route::get('/plans', [\App\Http\Controllers\Api\PlanController::class, 'index']);
 });
 
 // Protected routes (auth runs first, so throttle sees the user → 120/min)
@@ -54,8 +55,7 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::post('/works/{id}/pipeline/start', [WorkController::class, 'startPipeline']);
     Route::get('/works/{id}/pipeline/progress', [WorkController::class, 'pipelineProgress']);
 
-    // Plans & Memberships
-    Route::get('/plans', [\App\Http\Controllers\Api\PlanController::class, 'index']);
+    // Membership (plan moved to public group above)
     Route::get('/membership', [\App\Http\Controllers\Api\PlanController::class, 'myMembership']);
     Route::post('/orders', [\App\Http\Controllers\Api\PlanController::class, 'createOrder']);
 

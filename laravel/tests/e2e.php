@@ -450,7 +450,6 @@ test('Protected endpoints require auth', function() use ($base) {
         ['POST', '/user/model-configs'],
         ['GET', '/works'],
         ['POST', '/works'],
-        ['GET', '/plans'],
         ['GET', '/membership'],
     ];
     $failures = [];
