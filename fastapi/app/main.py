@@ -77,7 +77,7 @@ async def health():
     try:
         import socket
         s = socket.socket()
-        s.settimeout(3)
+        s.settimeout(1)
         s.connect((settings.DB_HOST, settings.DB_PORT))
         s.close()
         db_ok = True
@@ -87,7 +87,7 @@ async def health():
     try:
         import socket
         s = socket.socket()
-        s.settimeout(3)
+        s.settimeout(1)
         s.connect((settings.REDIS_HOST, settings.REDIS_PORT))
         s.close()
         redis_ok = True

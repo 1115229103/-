@@ -25,18 +25,21 @@ return [
             'port' => env('REDIS_PORT', '6379'),
             'password' => env('REDIS_PASSWORD', null),
             'database' => 0,
+            'timeout' => 1.0,
         ],
         'cache' => [
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'port' => env('REDIS_PORT', '6379'),
             'password' => env('REDIS_PASSWORD', null),
             'database' => 1,
+            'timeout' => 1.0,
         ],
         'queue' => [
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'port' => env('REDIS_PORT', '6379'),
             'password' => env('REDIS_PASSWORD', null),
             'database' => 2,
+            'timeout' => 1.0,
         ],
     ],
 ];

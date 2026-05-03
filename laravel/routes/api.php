@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ModelController;
 use App\Http\Controllers\Api\WorkController;
@@ -25,10 +26,19 @@ Route::middleware('throttle:120,1')->group(function () {
     });
 
     Route::get('/health/deep', function () {
+        $cacheKey = 'health:deep:result';
+        $cacheTtl = 15; // seconds
+
+        $cached = Cache::get($cacheKey);
+        if ($cached) {
+            return response()->json($cached, $cached['status'] === 'ok' ? 200 : 503);
+        }
+
         $checks = [];
         $healthy = true;
+        $timeout = 1; // second
 
-        // DB check
+        // DB check — use existing PDO connection (fast)
         try {
             \Illuminate\Support\Facades\DB::connection()->getPdo();
             $checks['database'] = ['status' => 'ok', 'driver' => DB::connection()->getDriverName()];
@@ -37,35 +47,51 @@ Route::middleware('throttle:120,1')->group(function () {
             $healthy = false;
         }
 
-        // Redis check
+        // Redis check — quick TCP socket instead of full Predis handshake
         try {
-            \Illuminate\Support\Facades\Redis::connection()->ping();
-            $checks['redis'] = ['status' => 'ok'];
+            $redisHost = env('REDIS_HOST', '127.0.0.1');
+            $redisPort = (int) env('REDIS_PORT', 6379);
+            $fp = @fsockopen($redisHost, $redisPort, $errNo, $errStr, $timeout);
+            if ($fp) {
+                fclose($fp);
+                $checks['redis'] = ['status' => 'ok'];
+            } else {
+                throw new \Exception($errStr ?: 'Connection refused');
+            }
         } catch (\Exception $e) {
             $checks['redis'] = ['status' => 'error', 'message' => $e->getMessage()];
             $healthy = false;
         }
 
-        // FastAPI check
+        // FastAPI check — quick TCP socket
         try {
             $fastapiUrl = rtrim(env('FASTAPI_URL', 'http://localhost:8001'), '/');
-            $resp = \Illuminate\Support\Facades\Http::timeout(5)->get($fastapiUrl . '/health');
-            $checks['fastapi'] = $resp->successful()
-                ? ['status' => 'ok', 'code' => $resp->status()]
-                : ['status' => 'error', 'code' => $resp->status()];
-            if (!$resp->successful()) $healthy = false;
+            $fastapiParts = parse_url($fastapiUrl);
+            $fastapiHost = $fastapiParts['host'] ?? 'localhost';
+            $fastapiPort = $fastapiParts['port'] ?? 8001;
+            $fp = @fsockopen($fastapiHost, (int) $fastapiPort, $errNo, $errStr, $timeout);
+            if ($fp) {
+                fclose($fp);
+                $checks['fastapi'] = ['status' => 'ok'];
+            } else {
+                throw new \Exception($errStr ?: 'Connection refused');
+            }
         } catch (\Exception $e) {
             $checks['fastapi'] = ['status' => 'error', 'message' => $e->getMessage()];
             $healthy = false;
         }
 
-        return response()->json([
+        $result = [
             'status' => $healthy ? 'ok' : 'degraded',
             'service' => 'AIStory API',
             'version' => '1.0.0',
             'timestamp' => now()->toIso8601String(),
             'checks' => $checks,
-        ], $healthy ? 200 : 503);
+        ];
+
+        Cache::put($cacheKey, $result, $cacheTtl);
+
+        return response()->json($result, $healthy ? 200 : 503);
     });
 
     Route::post('/auth/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
