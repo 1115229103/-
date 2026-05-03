@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 73
+## Current Iteration: 75
 
 ## Verify Command
 All six test suites must pass with 0 failures:
@@ -21,12 +21,18 @@ All six test suites must pass with 0 failures:
 
 ## Oracle Rules
 1. ✅ All 7 test suites return exit code 0 (227 tests: 193 PHP + 34 Python, 0 failures)
-2. ✅ Frontend scaffolded and buildable (admin 193KB + user 300KB)
+2. ✅ Frontend scaffolded and buildable (admin 194KB + user 300KB)
 3. ✅ Queue worker config exists (deploy/supervisor.conf + docker/supervisor.conf)
-4. ✅ Git repo — 51+ commits, clean tree
+4. ✅ Git repo — 81 commits, clean tree
 5. ✅ Rate limiting configured + localhost bypass for dev
-6. ✅ API docs exist (API.md 312 lines + openapi.json 728 lines)
-7. ✅ e2e.php (33/0/0 — Section 7 now fully green)
+6. ✅ API docs exist (API.md 312 lines + openapi.json 3019 lines)
+7. ✅ e2e.php (33/0/0)
+8. ✅ CI/CD pipeline (GitHub Actions, 5 jobs, full-stack integration)
+9. ✅ Docker deployment (4 services with init scripts)
+10. ✅ deploy.sh (9-step automated deployment)
+11. ✅ Production nginx config (SSL, HSTS, CSP, SPA routing, FastAPI proxy)
+12. ✅ Zero TODO/FIXME/HACK, zero hardcoded secrets
+13. ✅ SSRF protection, envelope encryption, internal token auth
 
 ## Iteration 47 — FFmpeg Shell Hardening (+21/-9 lines, 3 files)
 
@@ -846,4 +852,93 @@ This means expired sessions wouldn't redirect to the login page correctly.
 - User-app rebuilt: 300.39KB JS (was 300.37KB, +redirect fix)
 - 79 commits, clean tree
 
-## Status: ALL 7 ORACLE RULES SATISFIED — 227 TESTS GREEN, 0 WARNINGS
+## Iteration 74 — GitHub Actions CI/CD Pipeline (+226 lines, 1 file)
+
+### Approach: CI/CD automation — fundamentally different
+All 26 prior iterations tested, fixed, or audited code directly. This iteration
+creates the automated CI/CD pipeline that runs on every push and PR — ensuring
+every future change is validated before merge. This is infrastructure that pays
+dividends forever.
+
+### Pipeline Design (5 jobs)
+| Job | Runs | Time (est.) |
+|-----|------|-------------|
+| `python-tests` | 34 FastAPI unit tests | ~30s |
+| `frontend-build` | Both SPAs (matrix: user-app + admin-app) | ~45s |
+| `php-validate` | composer validate + PHP lint (app/routes/config/migrations/seeders) | ~30s |
+| `integration-tests` | Full stack: MySQL + Laravel + FastAPI + 6 PHP test suites | ~4min |
+| `ci-summary` | Aggregate all results, fail if any job failed | ~1s |
+
+### Key Design Decisions
+- **concurrency: cancel-in-progress** — no queue build-up on rapid pushes
+- **matrix build for frontends** — user-app and admin-app build in parallel
+- **MySQL service container** — health check ensures DB ready before tests
+- **FastAPI started as background process** — realistic integration test
+- **config:cache + route:cache** before tests — matches production behavior
+- **Action caching**: pip, composer, npm all use official cache actions
+
+### Changes
+- **.github/workflows/ci.yml** — NEW, 226 lines, 5 jobs
+
+### Build & Test Results
+- PHP: 32+24+33+24+41+39 = 193 passed, 0 failed
+- Python: 34 passed, 0 failed
+- **Total: 227 tests, 0 failures, 0 warnings**
+- 81 commits, clean tree
+
+## Iteration 75 — Production Go-Live Readiness Audit (+0/-0 lines, verified)
+
+### Approach: Operator experience audit — fundamentally different
+All 27 prior iterations built infrastructure, fixed bugs, added tests. This
+iteration steps back and asks: "If I hand this to a stranger with a server,
+can they deploy it successfully?" Audited every config file, env template,
+deployment script, and security surface from an operator's perspective.
+
+### Go-Live Checklist (all verified)
+
+**Code Quality**
+- ✅ Zero TODO/FIXME/HACK in 36 PHP files + 21 Python files
+- ✅ Zero hardcoded secrets or API keys in codebase
+- ✅ Zero hardcoded URLs in app/ code (only intentional localhost bypass in rate limiter)
+- ✅ All passwords in test files are test-only credentials
+- ✅ APP_DEBUG forced false in production env template
+
+**Security**
+- ✅ SSRF protection on FastAPI internal endpoints (7 private IP patterns)
+- ✅ Envelope encryption: AES-256-GCM, KEK never leaves FastAPI
+- ✅ Internal API token auth on all /internal/* endpoints
+- ✅ Rate limiting + localhost bypass for dev
+- ✅ TrustProxies middleware configured
+- ✅ CSP headers in deploy nginx config
+- ✅ Sensitive file blocking in nginx (env, log, sql, composer files)
+- ✅ Sanctum token expiration: 30 days
+
+**Deployment**
+- ✅ deploy.sh: 9-step automated deployment (env, deps, build, storage, db, cache, perms, verify)
+- ✅ docker-compose.yml: 4 services (mysql, redis, laravel, fastapi) with proper dependency chain
+- ✅ Dockerfiles: PHP 8.2-fpm-alpine + Nginx + Supervisor; Python 3.12-slim + uvicorn
+- ✅ docker/mysql/init.sql: auto-creates aistory DB + user on first boot
+- ✅ deploy nginx.conf: SSL, HTTP/2, HSTS, CSP, gzip, SPA routing, FastAPI proxy, cache
+- ✅ deploy supervisor.conf: 2 queue workers, --timeout=600, auto-restart
+- ✅ Production .env.example: all required vars with documentation
+
+**Testing**
+- ✅ 7 test suites, 227 tests, 0 failures, 0 warnings
+- ✅ CI/CD pipeline auto-runs on push/PR (5 jobs, full-stack integration)
+- ✅ All tests run on fresh `migrate:fresh --seed` database
+
+**Frontend**
+- ✅ Both SPAs build successfully (user-app 300KB, admin-app 194KB)
+- ✅ Router basenames match nginx location prefixes
+- ✅ API baseURL is relative (`/api/v1`) — no hostname coupling
+- ✅ 401 redirect path correct for both SPAs
+
+**Documentation**
+- ✅ API.md: 312 lines, all 60+ endpoints documented
+- ✅ openapi.json: 3019 lines, 73 paths, 96 HTTP methods
+- ✅ README with setup instructions, test counts, Docker deployment
+
+### No Changes Required
+Every checkpoint passed — no code changes needed.
+
+## Status: PRODUCTION READY — 227 TESTS GREEN, 0 WARNINGS, ALL CHECKS PASSED
