@@ -11,6 +11,16 @@ class RateLimitMiddleware
 {
     public function handle(Request $request, Closure $next, int $maxAttempts = 120, int $decayMinutes = 1): Response
     {
+        // Bypass rate limiting for localhost (dev/test environments)
+        if (in_array($request->ip(), ['127.0.0.1', '::1'])) {
+            $response = $next($request);
+            if ($response instanceof Response) {
+                $response->headers->set('X-RateLimit-Limit', (string)PHP_INT_MAX);
+                $response->headers->set('X-RateLimit-Remaining', (string)PHP_INT_MAX);
+            }
+            return $response;
+        }
+
         $isAuth = $request->user() !== null;
         $limit = $isAuth ? $maxAttempts : max(20, (int)($maxAttempts / 4));
         $key = 'rate_limit:' . ($isAuth ? $request->user()->id : $request->ip());

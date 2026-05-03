@@ -484,7 +484,7 @@ test('JSON content type on API', function() use ($base) {
 // ═══════════════════════════════════════════════════
 // SECTION 7: Response Format Consistency
 // ═══════════════════════════════════════════════════
-usleep(3000000);
+sleep(10); // Let rate-limit window reset before format checks
 echo "\n━━━ SECTION 7: Response Format Consistency ━━━\n";
 
 test('Register returns data.user + data.token', function() use ($base) {
@@ -498,14 +498,14 @@ test('Register returns data.user + data.token', function() use ($base) {
     return true;
 });
 
-test('Models endpoint returns data array', function() use ($base) {
-    $r = api('GET', "{$base}/models");
+test('Models endpoint returns data array', function() use ($base, $sharedToken) {
+    $r = api('GET', "{$base}/models", null, $sharedToken);
     if ($r['code'] === 429) return 'WARN';
     return isset($r['body']['data']) && is_array($r['body']['data']) ? true : 'data not an array';
 });
 
-test('Model objects have required fields', function() use ($base) {
-    $r = api('GET', "{$base}/models?category=moderation");
+test('Model objects have required fields', function() use ($base, $sharedToken) {
+    $r = api('GET', "{$base}/models?category=moderation", null, $sharedToken);
     if ($r['code'] === 429) return 'WARN';
     $model = $r['body']['data'][0] ?? null;
     if (!$model) return 'No moderation model';
