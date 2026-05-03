@@ -22,13 +22,10 @@ class Settings:
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
 
     # Master KEK — will be SHA256-hashed to 32 bytes by KeyService
-    MASTER_KEK: str = os.getenv(
-        "MASTER_KEK",
-        "change-me-in-production-use-32-byte!!"
-    )
+    MASTER_KEK: str = os.getenv("MASTER_KEK", "")
 
     # Internal API auth
-    INTERNAL_API_TOKEN: str = os.getenv("INTERNAL_API_TOKEN", "internal-secret-token")
+    INTERNAL_API_TOKEN: str = os.getenv("INTERNAL_API_TOKEN", "")
 
     # Default timeouts
     AI_REQUEST_TIMEOUT: int = int(os.getenv("AI_REQUEST_TIMEOUT", "120"))

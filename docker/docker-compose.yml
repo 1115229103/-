@@ -45,7 +45,7 @@ services:
       - redis
     environment:
       APP_ENV: local
-      APP_DEBUG: "true"
+      APP_DEBUG: "${APP_DEBUG:-false}"
       DB_HOST: mysql
       DB_DATABASE: aistory
       DB_USERNAME: aistory

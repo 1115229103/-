@@ -43,6 +43,10 @@ Desktop.ini
 # Docker
 docker-compose.override.yml
 
+# Debug/one-off scripts (keep out of production)
+check_db.php
+test_api.php
+
 # Build artifacts
 *.log
 *.tmp

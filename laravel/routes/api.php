@@ -15,6 +15,15 @@ use App\Http\Controllers\Api\WorkController;
 
 // Public routes (guest rate limit: 120→30/min)
 Route::middleware('throttle:120,1')->group(function () {
+    Route::get('/health', function () {
+        return response()->json([
+            'status' => 'ok',
+            'service' => 'AIStory API',
+            'version' => '1.0.0',
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    });
+
     Route::post('/auth/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::post('/auth/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
 
