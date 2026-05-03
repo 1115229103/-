@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 81
+## Current Iteration: 82
 
 ## Verify Command
 All six test suites must pass with 0 failures:
@@ -63,6 +63,31 @@ Every claim of "done" verified with real execution, not file-existence checks.
 - All 6 test suites: 193/0/0 ✅
 - Both services healthy (Laravel 200, FastAPI 200) ✅
 - Pipeline lifecycle: register→login→create work→start→execute→fail gracefully ✅
+
+## Iteration 82 — Infrastructure Gap Scan (+49 lines, 1 file)
+
+### Approach: 基础设施死角扫描 — 测试覆盖不到的地方
+Fundamentally different: scanned for files that tests don't cover.
+`.htaccess` was MISSING — discovered by checking `laravel/public/` contents.
+
+### Changes
+- **`.htaccess`** — NEW. Apache URL rewriting + SPA fallback + security headers
+  + asset caching + dotfile protection. Without it, Apache/XAMPP deployment
+  breaks: SPA routes 404, Laravel pretty URLs fail.
+
+### Audited (no issues found)
+- FastAPI source code: lifespan startup validation, envelope encryption AES-256-GCM,
+  SSRF protection (8 IP patterns), Pydantic field validators, internal token auth
+- Production nginx: HTTPS/HSTS/CSP/FastAPI proxy (600s)/SPA routing/sensitive file deny
+- Docker nginx: SPA routing/asset caching/security headers/PHP-FPM
+- deploy.sh: 9-step deployment, env validation, key generation, frontend build
+- Laravel `.env.example`: APP_DEBUG=false, placeholder values, 28 vars documented
+
+### Verification
+- All 6 test suites: 193/0/0 ✅
+- FastAPI Python tests: 34/0/0 ✅
+- SPA routing: /user-app/ → 200, /admin/ → 200, /user-app/login → 200 ✅
+- Static assets: JS/CSS served with correct content-type ✅
 
 ## Oracle Rules
 1. ✅ All 7 test suites return exit code 0 (227 tests: 193 PHP + 34 Python, 0 failures)
