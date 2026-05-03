@@ -115,6 +115,16 @@ test('GET /user/model-configs (empty)', function() use ($base, $token) {
     return $r['code'] === 200 ? true : "Code {$r['code']}";
 });
 
+test('POST /auth/forgot-password (registered email → 200)', function() use ($base, $email) {
+    $r = api('POST', "{$base}/auth/forgot-password", ['email' => $email]);
+    return $r['code'] === 200 && isset($r['body']['token']) ? true : "Code {$r['code']} or missing token";
+});
+
+test('POST /auth/forgot-password (invalid email format → 422)', function() use ($base) {
+    $r = api('POST', "{$base}/auth/forgot-password", ['email' => 'not-an-email']);
+    return $r['code'] === 422 ? true : "Code {$r['code']} (expected 422)";
+});
+
 echo "\n--- Model Config CRUD ---\n";
 $configId = null;
 
@@ -147,6 +157,12 @@ test('POST /user/model-configs/{id}/verify', function() use ($base, $token, $con
     return in_array($r['code'], [200, 422, 500]) ? true : "Code {$r['code']}";
 });
 
+test('PUT /user/model-configs/{id} (update priority)', function() use ($base, $token, $configId) {
+    $r = api('PUT', "{$base}/user/model-configs/{$configId}", ['priority' => 5, 'custom_params' => ['temperature' => 0.7]], $token);
+    if ($r['code'] !== 200) return "Code {$r['code']}: " . json_encode($r['body']);
+    return isset($r['body']['data']['id']) ? true : 'Missing id in response';
+});
+
 test('DELETE /user/model-configs/{id}', function() use ($base, $token, $configId) {
     $r = api('DELETE', "{$base}/user/model-configs/{$configId}", null, $token);
     return $r['code'] === 204 ? true : "Code {$r['code']}";
@@ -161,6 +177,11 @@ test('GET /plans', function() use ($base, $token) {
 test('GET /membership', function() use ($base, $token) {
     $r = api('GET', "{$base}/membership", null, $token);
     return $r['code'] === 200 ? true : "Code {$r['code']}";
+});
+
+test('POST /orders (invalid plan_id → 422)', function() use ($base, $token) {
+    $r = api('POST', "{$base}/orders", ['plan_id' => 99999, 'billing_cycle' => 'monthly'], $token);
+    return $r['code'] === 422 ? true : "Code {$r['code']} (expected 422)";
 });
 
 echo "\n--- Works CRUD ---\n";
@@ -190,6 +211,13 @@ test('GET /works/{id}', function() use ($base, $token, $workId) {
 test('PUT /works/{id}', function() use ($base, $token, $workId) {
     $r = api('PUT', "{$base}/works/{$workId}", ['title' => 'Updated Title'], $token);
     return $r['code'] === 200 ? true : "Code {$r['code']}";
+});
+
+test('GET /works/{id}/pipeline/progress', function() use ($base, $token, $workId) {
+    $r = api('GET', "{$base}/works/{$workId}/pipeline/progress", null, $token);
+    if ($r['code'] !== 200) return "Code {$r['code']}";
+    $data = $r['body']['data'] ?? [];
+    return array_key_exists('status', $data) && array_key_exists('state', $data) ? true : 'Missing status/state fields';
 });
 
 test('DELETE /works/{id}', function() use ($base, $token, $workId) {
