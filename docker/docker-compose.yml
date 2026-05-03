@@ -31,38 +31,37 @@ services:
   # Laravel 11 (PHP 8.2)
   laravel:
     build:
-      context: ./laravel
-      dockerfile: ../docker/laravel.Dockerfile
+      context: ..
+      dockerfile: docker/laravel.Dockerfile
     container_name: aistory-laravel
     restart: unless-stopped
     working_dir: /var/www
-    volumes:
-      - ../laravel:/var/www
     ports:
-      - "8000:8000"
+      - "80:80"
     depends_on:
       - mysql
       - redis
+      - fastapi
     environment:
-      APP_ENV: local
-      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_ENV: production
+      APP_DEBUG: "false"
       DB_HOST: mysql
       DB_DATABASE: aistory
       DB_USERNAME: aistory
       DB_PASSWORD: ${MYSQL_PASSWORD:-aistory_secret}
       REDIS_HOST: redis
       FASTAPI_URL: http://fastapi:8001
+      FASTAPI_INTERNAL_TOKEN: ${FASTAPI_INTERNAL_TOKEN}
+      MASTER_KEK: ${MASTER_KEK}
 
   # FastAPI (Python 3.12)
   fastapi:
     build:
-      context: ./fastapi
-      dockerfile: ../docker/fastapi.Dockerfile
+      context: ..
+      dockerfile: docker/fastapi.Dockerfile
     container_name: aistory-fastapi
     restart: unless-stopped
     working_dir: /app
-    volumes:
-      - ../fastapi:/app
     ports:
       - "8001:8001"
     depends_on:
@@ -74,7 +73,8 @@ services:
       DB_USERNAME: aistory
       DB_PASSWORD: ${MYSQL_PASSWORD:-aistory_secret}
       REDIS_HOST: redis
-      MASTER_KEK: ${MASTER_KEK:-change-me-in-production-use-32-byte-key}
+      MASTER_KEK: ${MASTER_KEK}
+      INTERNAL_API_TOKEN: ${FASTAPI_INTERNAL_TOKEN}
 
 volumes:
   mysql_data:
