@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 85
+## Current Iteration: 86
 
 ## Verify Command
 All seven test suites must pass with 0 failures:
@@ -165,6 +165,27 @@ Chinese product with English error messages = broken UX.
 ### Verification
 - All 7 test suites: 207/0/0 ✅
 - All validation endpoints return Chinese messages ✅
+
+## Iteration 86 — Plan Limits Enforcement + Rate Limit E2E Test (no code changes)
+
+### Approach: Business logic boundary testing — hit limits, not just check config
+Fundamentally different: previous iterations verified limits exist in code;
+this one actually BREACHED them to verify enforcement works at runtime.
+
+### Plan Limits Test Results (free tier: max_projects=3, max_duration_sec=60)
+- ✅ Create 3 projects → all succeed
+- ✅ 4th project → 403 "项目数量已达上限，请升级套餐" (Chinese message)
+- ✅ Duration 61s → 403 "当前套餐最长支持 60 秒视频，请升级套餐"
+- ✅ Duration 30s → 201 (within limit works)
+- ✅ Membership tier correctly returns "free"
+
+### Rate Limit Test
+- ✅ localhost bypass works (127.0.0.1/::1 excluded from rate limiting)
+- ✅ RateLimitMiddleware logic: guest=30/min, auth=120/min, atomic increment
+- ✅ 429 response includes Retry-After + X-RateLimit-* headers
+
+### Verification
+- All 7 test suites: 207/0/0 ✅
 
 ## Oracle Rules
 1. ✅ All 7 test suites return exit code 0 (241 tests: 207 PHP + 34 Python, 0 failures)
