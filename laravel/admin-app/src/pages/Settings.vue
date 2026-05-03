@@ -53,7 +53,7 @@ const saveSettings = async () => {
     await api.put('/admin/system/settings', payload);
     saveMsg.value = '保存成功';
   } catch (e) {
-    saveMsg.value = '保存失败: ' + (e.response?.data?.errors ? JSON.stringify(e.response.data.errors) : (e.response?.data?.message || e.message));
+    saveMsg.value = '保存失败: ' + (e.response?.data?.errors ? Object.values(e.response.data.errors).flat().join('; ') : (e.response?.data?.message || e.message));
   }
   saving.value = false;
 };

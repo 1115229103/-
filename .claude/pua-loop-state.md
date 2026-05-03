@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 108
+## Current Iteration: 109
 
 ## Verify Command
 All seven test suites must pass with 0 failures:
@@ -20,7 +20,52 @@ All seven test suites must pass with 0 failures:
 - ux_quality_audit.php (39 tests, exit 0)
 - password_reset_test.php (14 tests, exit 0)
 
-## Iteration 108 — Full Suite Verification + DB Cleanup + GitHub Push (+0/-0 lines, 0 code changes)
+## Iteration 109 — FastAPI Health Fix + Full Manual Walkthrough (+26/-16 lines, 1 file)
+
+### Approach: Fix false degraded status + real human simulation — fundamentally different
+All 108 prior iterations accepted FastAPI's `/health` returning `degraded` due
+to Redis. Investigation revealed FastAPI does NOT use Redis at all — zero imports
+outside config.py and main.py health check. The health endpoint was degrading a
+service over a dependency that doesn't exist. Also performed live curl-based user
+walkthrough examining actual response quality (not test assertions).
+
+### Bug Found & Fixed
+- **FastAPI /health always degraded**: Redis check was unconditional. But FastAPI
+  has no Redis dependency — Celery was removed in iter 63, and no caching layer
+  uses Redis. The health endpoint was reporting `{"status":"degraded","checks":
+  {"redis":"fail"}}` for a service that doesn't need Redis. Same class of bug
+  as Laravel health/deep fix in iter 105.
+- **Fix**: Removed Redis check entirely from FastAPI health endpoint. Now only
+  checks DB connectivity via TCP socket. Status: `ok` when DB reachable.
+
+### Manual Walkthrough (10 steps, live curl)
+1. Register → 201, token returned, free plan auto-assigned ✅
+2. /auth/me → 200, membership `{name: "免费版", tier: "free"}` ✅
+3. Model config → 201, api_key_masked `****aa1c`, model_display_name correct ✅
+4. Create work → 201, status=draft ✅
+5. Pipeline start → 200, runs without 500 ✅
+6. Pipeline progress → 200, status=failed (expected: fake key → 403) ✅
+7. Works list → 200, pagination correct ✅
+8. Admin login → 200 ✅
+9. Admin dashboard → 200, total_users correct ✅
+10. Cleanup: work deleted 204, user deleted, no orphans ✅
+
+### SPA Serving Verified (Apache 8085)
+- /user-app/ → 200, React root div ✅
+- /admin/ → 200, Vue app div ✅
+- /user-app/login → 200 (deep route) ✅
+- /admin/works → 200 (deep route) ✅
+
+### Build & Test Results
+- All 11 test suites: 340/0/0
+- FastAPI: 34/0/0 Python, health now returns `ok`
+- Browser E2E: 32/0/0
+- FastAPI health: `{"status":"ok","checks":{"database":"ok"}}` (was `degraded`)
+- Laravel health: `{"status":"ok"}` (unchanged)
+- DB clean: 2 users (admin + demo), 0 orphans
+
+### Commit: 3c22e52 — fix: remove false Redis degraded status from FastAPI health endpoint
+### GitHub: Pushed to origin/master ✅
 
 ### Approach: Continuation from compaction — verify all systems, push pending commits
 Session resumed from context compaction. All 11 test suites verified green, 
