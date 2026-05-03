@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 59
+## Current Iteration: 60
 
 ## Verify Command
 All five test suites must pass with 0 failures:
@@ -217,6 +217,42 @@ dependency fails — ready for load balancer health checks and monitoring.
 - User journey: 24 passed, 0 failed
 - **Total: 111 tests, 0 failures, 0 warnings**
 - 45 commits, clean tree
+
+## Iteration 60 — Frontend Build & SPA Routing Audit (+3/-5 lines, 5 files)
+
+### Approach: Full-stack frontend audit — fundamentally different
+Audited frontend build configurations, SPA routing, nginx configs, and
+production deployment paths. Found 2 production blockers that would break
+the user-facing SPA in production.
+
+### Bugs Found & Fixed
+- **User-app missing `<BrowserRouter basename>`** — React Router without
+  `basename="/user-app"` means all routes fail in production behind nginx
+  at `/user-app/`. Paths like `/user-app/dashboard` wouldn't match the
+  defined route `/dashboard`. Added `basename="/user-app"`.
+- **Deploy nginx `/admin` uses `alias` + `try_files` antipattern** — known
+  nginx bug where `alias` + `try_files` causes double path resolution,
+  producing 404s on admin sub-routes. Changed to root-based approach
+  matching the working docker config.
+- **Both nginx configs: `location /admin` without trailing slash** — prefix
+  matches unintended paths (`/administrator`, etc.). Changed to `/admin/`.
+
+### Audit Findings (no issues)
+- Both SPAs use `baseURL: '/api/v1'` (relative) — correct for production
+- No hardcoded `localhost` URLs in frontend source
+- Admin SPA correctly uses `createWebHistory('/admin/')` (Vue Router)
+- Built JS/CSS asset references all valid (files exist at correct paths)
+- Docker nginx uses `root` (correct), not `alias` for `/admin/`
+
+### Build & Test Results
+- User-app rebuilt: 300.37KB JS (was 300.35KB, +basename)
+- Admin SPA unchanged: 193.86KB JS
+- API tests: 32 passed, 0 failed
+- Admin tests: 22 passed, 0 failed
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- Security fuzz: 41 passed, 0 failed
+- **Total: 152 tests, 0 failures, 0 warnings**
 
 ## Iteration 59 — API Response Format Standardization (+15/-11 lines, 6 files)
 
