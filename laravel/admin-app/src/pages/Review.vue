@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../api.js';
+import Pagination from '../components/Pagination.vue';
 
 const works = ref([]);
 const loading = ref(true);
@@ -8,6 +9,9 @@ const filterStatus = ref('pending_review');
 const actionError = ref('');
 const actionLoading = ref(null);
 const loadError = ref('');
+const page = ref(1);
+const lastPage = ref(1);
+const total = ref(0);
 
 const statuses = [
   { value: 'pending_review', label: '待审核' },
@@ -19,11 +23,16 @@ const statuses = [
 async function load() {
   loading.value = true;
   try {
-    const { data } = await api.get('/admin/review/works', { params: { status: filterStatus.value } });
-    works.value = data.data?.data || data.data || [];
+    const { data } = await api.get('/admin/review/works', { params: { status: filterStatus.value, page: page.value } });
+    const p = data.data;
+    works.value = p.data || [];
+    lastPage.value = p.last_page || 1;
+    total.value = p.total || 0;
   } catch { works.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
 }
+
+function goToPage(p) { page.value = p; load(); }
 
 onMounted(load);
 
@@ -56,7 +65,7 @@ async function reject(id) {
   <div>
     <h2 style="margin-bottom:20px">作品审核</h2>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <button v-for="s in statuses" :key="s.value" :class="'btn small ' + (filterStatus === s.value ? 'primary' : 'secondary')" @click="filterStatus = s.value; load()">{{ s.label }}</button>
+      <button v-for="s in statuses" :key="s.value" :class="'btn small ' + (filterStatus === s.value ? 'primary' : 'secondary')" @click="filterStatus = s.value; page = 1; load()">{{ s.label }}</button>
     </div>
     <div v-if="actionError" class="error-banner">{{ actionError }}</div>
     <div v-if="loadError" class="error-banner">{{ loadError }}</div>
@@ -84,5 +93,6 @@ async function reject(id) {
         </tr>
       </tbody>
     </table>
+    <Pagination :currentPage="page" :lastPage="lastPage" :total="total" :perPage="20" :loading="loading" @page-change="goToPage" />
   </div>
 </template>

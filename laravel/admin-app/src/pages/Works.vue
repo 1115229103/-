@@ -1,18 +1,30 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../api.js';
+import Pagination from '../components/Pagination.vue';
 
 const works = ref([]);
 const loading = ref(true);
 const loadError = ref('');
+const page = ref(1);
+const lastPage = ref(1);
+const total = ref(0);
 
-onMounted(async () => {
+async function load() {
+  loading.value = true;
   try {
-    const { data } = await api.get('/admin/works');
-    works.value = data.data?.data || data.data || [];
+    const { data } = await api.get('/admin/works', { params: { page: page.value } });
+    const p = data.data;
+    works.value = p.data || [];
+    lastPage.value = p.last_page || 1;
+    total.value = p.total || 0;
   } catch { works.value = []; loadError.value = '加载失败，请检查网络后重试'; }
   loading.value = false;
-});
+}
+
+function goToPage(p) { page.value = p; load(); }
+
+onMounted(load);
 </script>
 
 <template>
@@ -35,5 +47,6 @@ onMounted(async () => {
         </tr>
       </tbody>
     </table>
+    <Pagination :currentPage="page" :lastPage="lastPage" :total="total" :perPage="20" :loading="loading" @page-change="goToPage" />
   </div>
 </template>
