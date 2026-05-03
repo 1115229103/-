@@ -40,11 +40,15 @@ class WorkController extends Controller
 
         $user = $request->user();
 
-        // Check project limit based on plan
-        $planFeatures = $user->membership?->plan?->features ?? ['max_projects' => 3];
+        // Check plan limits
+        $planFeatures = $user->membership?->plan?->features ?? ['max_projects' => 3, 'max_duration_sec' => 60];
         $currentCount = Work::where('user_id', $user->id)->count();
         if ($currentCount >= ($planFeatures['max_projects'] ?? 3)) {
             return response()->json(['error' => 'project_limit_reached', 'message' => '项目数量已达上限，请升级套餐'], 403);
+        }
+        $maxDuration = $planFeatures['max_duration_sec'] ?? 60;
+        if ($request->target_duration_sec && (int) $request->target_duration_sec > $maxDuration) {
+            return response()->json(['error' => 'duration_limit_reached', 'message' => "当前套餐最长支持 {$maxDuration} 秒视频，请升级套餐"], 403);
         }
 
         $work = Work::create([
@@ -85,7 +89,14 @@ class WorkController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $work = Work::where('user_id', $request->user()->id)->findOrFail($id);
+        $user = $request->user();
+        $planFeatures = $user->membership?->plan?->features ?? ['max_duration_sec' => 60];
+        $maxDuration = $planFeatures['max_duration_sec'] ?? 60;
+        if ($request->target_duration_sec && (int) $request->target_duration_sec > $maxDuration) {
+            return response()->json(['error' => 'duration_limit_reached', 'message' => "当前套餐最长支持 {$maxDuration} 秒视频，请升级套餐"], 403);
+        }
+
+        $work = Work::where('user_id', $user->id)->findOrFail($id);
         $work->update($validator->validated());
 
         return response()->json(['data' => $work]);

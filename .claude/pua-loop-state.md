@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 70
+## Current Iteration: 71
 
 ## Verify Command
 All six test suites must pass with 0 failures:
@@ -729,5 +729,52 @@ rounds, identifying every endpoint exceeding the 500ms threshold.
 - Security fuzz: 41 passed, 0 failed
 - UX quality audit: 39 passed, 0 failed
 - **Total: 193 tests, 0 failures, 0 warnings**
+
+## Iteration 71 — Business Logic Audit + Docker Init Fix (+19/-4 lines, 5 files)
+
+### Approach: Plan limit enforcement audit — fundamentally different
+All 23 prior iterations focused on code correctness, security, performance,
+and deployment. This iteration audits the business logic layer: plan tier
+limits, quota enforcement, and order validation. Tests actual API behavior
+by creating users and probing every plan-based restriction.
+
+### Bug Found: Duration Limit Not Enforced
+Free plan advertises `max_duration_sec: 60` but the WorkController had zero
+validation against this value. Users on the free plan could create works
+with any duration up to 7200s. Fixed by adding plan-based duration checks
+in both `store()` and `update()`.
+
+### Bug Found: Docker `mysql/init.sql` Missing
+`docker-compose.yml` line 18 mounts `./mysql/init.sql` as the MySQL init
+script — but the file didn't exist. First Docker deployment would fail at
+database initialization. Created the init script with database + user
+creation and proper UTF-8 charset.
+
+### Business Logic Audit Results
+| Rule | Enforced | Status |
+|------|----------|--------|
+| Project limit (free: 3) | Yes | ✅ Working |
+| Duration limit (free: 60s) | Was NO | ✅ Fixed |
+| Order: invalid plan_id | Yes | ✅ 422 rejected |
+| Order: missing payment_method | Yes | ✅ 422 rejected |
+| Order: invalid billing_cycle | Yes | ✅ 422 rejected |
+| User scoping (A can't see B's work) | Yes | ✅ Enforced |
+| Rate limiting | Yes | ✅ Bypassed on localhost |
+
+### Changes
+- **WorkController.php** — +6 lines: duration check in store() and update()
+- **docker/mysql/init.sql** — NEW, 9 lines: create aistory DB + user
+- **tests/e2e.php** — 120s → 60s (respect free plan limit)
+- **tests/ux_quality_audit.php** — 180s → 60s (respect free plan limit)
+
+### Build & Test Results
+- API tests: 32 passed, 0 failed
+- Admin tests: 24 passed, 0 failed
+- E2E: 33 passed, 0 failed, 0 warnings
+- User journey: 24 passed, 0 failed
+- Security fuzz: 41 passed, 0 failed
+- UX quality audit: 39 passed, 0 failed
+- **Total: 193 tests, 0 failures, 0 warnings**
+- 78 commits, clean tree (after commit)
 
 ## Status: ALL 7 ORACLE RULES SATISFIED — 193 TESTS GREEN, 0 WARNINGS

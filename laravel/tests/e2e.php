@@ -217,7 +217,7 @@ test('User lifecycle: register → login → me → logout → verify revoked', 
 
 test('Work lifecycle: create → read → update → verify → delete → verify gone', function() use ($base, $sharedToken) {
     // Create
-    $r = api('POST', "{$base}/works", ['title' => 'CRUD Work', 'style' => '写实', 'target_duration_sec' => 120], $sharedToken);
+    $r = api('POST', "{$base}/works", ['title' => 'CRUD Work', 'style' => '写实', 'target_duration_sec' => 60], $sharedToken);
     if ($r['code'] !== 201) return "Create code {$r['code']}";
     $id = $r['body']['data']['id'] ?? null;
     if (!$id) return 'No work id';

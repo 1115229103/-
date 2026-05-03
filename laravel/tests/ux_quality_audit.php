@@ -146,7 +146,7 @@ echo "\n━━━ PHASE 5: Works 项目管理 ━━━\n";
 $work = api('POST', "{$base}/works", [
     'title' => 'UX审计测试作品',
     'style' => 'cinematic',
-    'target_duration_sec' => 180,
+    'target_duration_sec' => 60,
 ], $token);
 $workId = $work['body']['data']['id'] ?? 0;
 $workData = $work['body']['data'] ?? [];
