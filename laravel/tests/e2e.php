@@ -92,6 +92,10 @@ if (!$sharedToken) {
 }
 echo "Shared user created. Token: " . substr($sharedToken, 0, 16) . "...\n\n";
 
+// Cache first model ID for pipeline/config tests
+$modelsRes = api('GET', "{$base}/models");
+$sharedModelId = $modelsRes['body']['data'][0]['id'] ?? 1;
+
 // ═══════════════════════════════════════════════════
 // SECTION 1: Validation & Error Handling
 // ═══════════════════════════════════════════════════
@@ -388,6 +392,48 @@ test('Order creation validates plan_id', function() use ($base, $sharedToken) {
         'plan_id' => 99999, 'payment_method' => 'wechat', 'billing_cycle' => 'monthly',
     ], $sharedToken);
     return $r['code'] === 422 ? true : "Expected 422, got {$r['code']}";
+});
+
+test('Pipeline execution: starts without 500, transitions to failed', function() use ($base, $sharedToken, $sharedModelId) {
+    // Create a model config for the shared user (script_analysis stage)
+    $r = api('POST', "{$base}/user/model-configs", [
+        'model_registry_id' => $sharedModelId,
+        'stage' => 'script_analysis',
+        'api_key' => 'sk-e2e-pipeline-test-key',
+    ], $sharedToken);
+    if ($r['code'] === 429) return 'WARN';
+    $cfgId = $r['body']['data']['id'] ?? null;
+    if (!$cfgId) return 'Failed to create config';
+
+    // Create a work
+    $r = api('POST', "{$base}/works", [
+        'title' => 'Pipeline E2E Test', 'style' => '写实', 'target_duration_sec' => 60,
+    ], $sharedToken);
+    if ($r['code'] === 429) return 'WARN';
+    $workId = $r['body']['data']['id'] ?? null;
+    if (!$workId) return 'Failed to create work';
+
+    // Start pipeline — must not return 500
+    $r = api('POST', "{$base}/works/{$workId}/pipeline/start", null, $sharedToken);
+    if ($r['code'] === 500) return 'Pipeline start returned 500';
+    if ($r['code'] === 429) return 'WARN';
+
+    // Wait for sync job to complete (up to 10 seconds)
+    $finalStatus = null;
+    for ($i = 0; $i < 5; $i++) {
+        usleep(500000);
+        $r = api('GET', "{$base}/works/{$workId}", null, $sharedToken);
+        $finalStatus = $r['body']['data']['status'] ?? null;
+        if ($finalStatus === 'failed') break;
+    }
+
+    // Cleanup
+    api('DELETE', "{$base}/works/{$workId}", null, $sharedToken);
+    api('DELETE', "{$base}/user/model-configs/{$cfgId}", null, $sharedToken);
+
+    // Verify work transitioned to failed (fake key → AI call fails)
+    if ($finalStatus !== 'failed') return "Work stuck in '{$finalStatus}' instead of 'failed'";
+    return true;
 });
 
 // ═══════════════════════════════════════════════════

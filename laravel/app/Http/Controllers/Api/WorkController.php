@@ -113,10 +113,18 @@ class WorkController extends Controller
             return response()->json(['error' => 'Work is already processing or completed'], 400);
         }
 
-        $pipeline = app(PipelineService::class);
-        $pipeline->start($work, $request->user());
+        try {
+            $pipeline = app(PipelineService::class);
+            $pipeline->start($work, $request->user());
+        } catch (\Throwable $e) {
+            $work->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
+            return response()->json([
+                'error' => 'Pipeline failed to start',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
 
-        return response()->json(['data' => ['status' => 'processing', 'pipeline_state' => 'script_analysis']]);
+        return response()->json(['data' => ['status' => $work->status, 'pipeline_state' => $work->pipeline_state]]);
     }
 
     /**

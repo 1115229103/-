@@ -45,7 +45,16 @@ class RunPipelineStageJob implements ShouldQueue
                     'error_message' => "{$this->stage}: {$e->getMessage()}",
                 ]);
             } else {
-                $this->release($this->backoff * $this->attempts());
+                // release() only works with async queue drivers (redis/database).
+                // With sync driver, mark failed immediately to avoid stuck 'parsing' state.
+                if (config('queue.default') === 'sync') {
+                    $work->update([
+                        'status'        => 'failed',
+                        'error_message' => "{$this->stage}: {$e->getMessage()}",
+                    ]);
+                } else {
+                    $this->release($this->backoff * $this->attempts());
+                }
             }
         }
     }

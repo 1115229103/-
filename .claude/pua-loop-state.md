@@ -8,46 +8,48 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 31
+## Current Iteration: 32
 
 ## Verify Command
 All three test suites must pass:
 - api_smoke.php (24 tests, exit 0)
 - admin_api_smoke.php (22 tests, exit 0)
-- e2e.php (32 tests, exit 0)
+- e2e.php (33 tests, exit 0) — NEW: pipeline execution flow test
 
 ## Oracle Rules
 1. ✅ Both test files must return exit code 0
 2. ✅ Frontend must be scaffolded and buildable (admin 187.4KB + user 298.5KB)
 3. ✅ Queue worker config must exist
-4. ✅ Git repo must be initialized — commits, clean tree, all changes committed
+4. ✅ Git repo must be initialized — 12 commits, clean tree
 5. ✅ Rate limiting must be configured
 6. ✅ API docs must exist
-7. ✅ e2e.php (32 tests, exit 0, 0 WARNs)
+7. ✅ e2e.php (33 tests, exit 0, 0 WARNs)
 
-## Iteration 31 — UX Production Hardening
+## Iteration 32 — Pipeline End-to-End Tracing & Bug Fixes
 
-### api_key_masked in model config responses
-- Fixed storeConfig(): now returns api_key_masked, category, model_display_name, provider, api_type
-- Fixed updateConfig(): returns api_key_masked when API key is updated
-- Updated api_smoke.php: validates api_key_masked starts with '****' in create response
+### Critical Bugs Found & Fixed
+1. **retry() called on Response instead of PendingRequest** (PipelineService.php:183)
+   - `->post(...)->retry(3, 100)` → `->retry(3, 100)->post(...)`
+   - Caused 500 error on every pipeline start
+   
+2. **Sync queue release() doesn't retry — works stuck in 'parsing' forever** (RunPipelineStageJob.php)
+   - With QUEUE_CONNECTION=sync, `$this->release()` did not properly re-execute
+   - Work stayed in 'parsing' with no error_message — user sees infinite spinner
+   - Fix: detect sync queue and mark as failed immediately instead of releasing
 
-### Admin error state differentiation (19 pages)
-- Added loadError ref to all 19 admin list pages + Dashboard
-- Silent `catch { x.value = []; }` → `catch { x.value = []; loadError.value = '...'; }`
-- Added `.error-banner` CSS class in style.css
-- Error banners displayed above tables when API load fails
-- Users can now distinguish "no data" from "server error"
+3. **Pipeline start controller crashed with 500 HTML instead of JSON** (WorkController.php)
+   - Uncaught exceptions from sync-dispatched jobs propagated to HTTP response
+   - Fix: try/catch around pipeline start, return JSON error response with message
 
-### INTERNAL_API_TOKEN hardening
-- Removed weak default from services.php (was 'internal-secret-token' fallback)
-- Updated Laravel .env and FastAPI .env with strong 64-char hex token
-- FastAPI startup check already blocks 'internal-secret-token' pattern
-- api_smoke.php now reads token from .env instead of hardcoding
+### Pipeline E2E Test Verified
+- Complete flow: register → config key → create work → start pipeline → FastAPI → AI API → failed (fake key)
+- Status transitions: draft → parsing → failed (proper error_message set)
+- Work no longer stuck in 'parsing' state
+- All 33 e2e tests passing
 
 ### Build artifacts
 - admin-app: 187.40 KB JS + 8.33 KB CSS
 - user-app: 298.53 KB JS + 8.54 KB CSS
-- All 78 tests passing (24 API + 22 Admin + 32 E2E)
+- All 79 tests passing (24 API + 22 Admin + 33 E2E)
 
-## Status: ALL 7 ORACLE RULES SATISFIED — ITERATING ON UX + SECURITY
+## Status: ALL 7 ORACLE RULES SATISFIED — PIPELINE CORE LOOP VERIFIED

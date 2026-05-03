@@ -167,7 +167,8 @@ class PipelineService
     {
         return Http::withHeaders([
             'X-Internal-Token' => config('services.fastapi.internal_token'),
-        ])->post(config('services.fastapi.url') . '/internal/run-stage', [
+        ])->retry(3, 100)
+          ->post(config('services.fastapi.url') . '/internal/run-stage', [
             'user_id'      => $user->id,
             'stage'        => $stage,
             'wrapped_dek'  => $user->wrapped_dek,
@@ -180,6 +181,6 @@ class PipelineService
                 'custom_params'  => $config->custom_params,
             ],
             'stage_input' => $input,
-        ])->retry(3, 100)->throw()->json();
+        ])->throw()->json();
     }
 }
