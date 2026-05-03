@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 111
+## Current Iteration: 112
 
 ## Verify Command
 All eleven test suites must pass with 0 failures:
@@ -23,6 +23,38 @@ All eleven test suites must pass with 0 failures:
 - openapi_contract.php (48 tests)
 - FastAPI pytest (34 tests)
 - browser_e2e.js (32 tests)
+
+## Iteration 112 — Real Database Backup System (+142/-16 lines, 4 files)
+
+### Approach: Build real backup infrastructure — fundamentally different
+All 50+ prior iterations from iter 69 noted BackupController was a stub that
+created "pending" records without dispatching actual backups. This iteration
+BUILT the real thing: mysqldump-based database backup with file download and
+proper lifecycle management.
+
+### Changes
+- **app/Services/BackupService.php** — NEW (77 lines). Runs mysqldump with
+  --single-transaction --routines --triggers, saves to storage/backups/.
+  Uses exec() instead of Symfony Process on Windows because the PHP built-in
+  server doesn't inherit WinSock properly to subprocesses (error 10106).
+  Handles password escaping via escapeshellarg().
+- **BackupController.php** — Rewritten (+35/-12). create() now dispatches
+  real mysqldump via BackupService. Added download() for file streaming
+  with BinaryFileResponse + destroy() for backup deletion with file cleanup.
+- **routes/admin.php** — +2 routes: GET /system/backups/{id}/download,
+  DELETE /system/backups/{id}
+- **.gitignore** — +2 lines: /storage/backups/* with !/storage/backups/.gitkeep
+
+### End-to-End Verification
+1. POST /admin/system/backups → 201, status=completed, 139KB SQL file ✓
+2. GET /admin/system/backups → 200, lists all backups with metadata ✓
+3. GET /admin/system/backups/{id}/download → 200, streams valid SQL ✓
+4. DELETE /admin/system/backups/{id} → 204, removes file + record ✓
+5. Verified SQL file is valid MariaDB dump with all table structures ✓
+
+### Test Results
+- admin_api_smoke: 24/0/0 (no regressions) ✓
+- api_smoke: 37/0/0 (previous run) ✓
 
 ## Iteration 111 — Full Test Suite Verification + API Benchmark + Proactive Optimization Scan
 

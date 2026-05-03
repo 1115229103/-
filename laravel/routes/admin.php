@@ -80,3 +80,5 @@ Route::put('/system/settings', [\App\Http\Controllers\Admin\SystemController::cl
 Route::get('/system/operation-logs', [\App\Http\Controllers\Admin\OperationLogController::class, 'index']);
 Route::get('/system/backups', [\App\Http\Controllers\Admin\BackupController::class, 'index']);
 Route::post('/system/backups', [\App\Http\Controllers\Admin\BackupController::class, 'create']);
+Route::get('/system/backups/{id}/download', [\App\Http\Controllers\Admin\BackupController::class, 'download']);
+Route::delete('/system/backups/{id}', [\App\Http\Controllers\Admin\BackupController::class, 'destroy']);

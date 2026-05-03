@@ -6,6 +6,8 @@
 /storage/framework/views/*
 /storage/logs/*
 /storage/app/*
+/storage/backups/*
+!/storage/backups/.gitkeep
 .env
 .env.backup
 /test-results/
