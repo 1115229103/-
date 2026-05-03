@@ -154,6 +154,56 @@ class AuthController extends Controller
     }
 
     /**
+     * Update profile (name, avatar_url).
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name'       => 'sometimes|string|max:255',
+            'avatar_url' => 'sometimes|nullable|url|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = $request->user();
+        $user->update($request->only(['name', 'avatar_url']));
+
+        return response()->json([
+            'data' => $user->only(['id', 'name', 'email', 'avatar_url']),
+        ]);
+    }
+
+    /**
+     * Delete own account (GDPR right to erasure). Requires password confirmation.
+     */
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = $request->user();
+
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['error' => 'wrong_password', 'message' => '密码错误，无法注销账号'], 403);
+        }
+
+        // Revoke all tokens first
+        $user->tokens()->delete();
+
+        // Soft-delete the user (preserves data integrity for their works)
+        $user->delete();
+
+        return response()->json(['data' => ['message' => '账号已注销']]);
+    }
+
+    /**
      * Get current user info.
      */
     public function me(Request $request): JsonResponse

@@ -260,6 +260,17 @@ if ($resetToken) {
 // Get a fresh token (login now deletes old tokens per user)
 $token = api('POST', "{$base}/auth/login", ['email' => $email, 'password' => $password])['body']['data']['token'] ?? '';
 
+echo "\n--- Auth Profile Update ---\n";
+test('PATCH /auth/me update name', function() use ($base, $token) {
+    $r = api('PATCH', "{$base}/auth/me", ['name' => 'Updated Smoke Test'], $token);
+    return $r['code'] === 200 && ($r['body']['data']['name'] ?? '') === 'Updated Smoke Test' ? true : "Code {$r['code']}";
+});
+
+test('DELETE /auth/me wrong password → 403', function() use ($base, $token) {
+    $r = api('DELETE', "{$base}/auth/me", ['password' => 'wrongpassword'], $token);
+    return $r['code'] === 403 ? true : "Code {$r['code']} (expected 403)";
+});
+
 echo "\n--- Auth Logout ---\n";
 test('POST /auth/logout', function() use ($base, $token) {
     $r = api('POST', "{$base}/auth/logout", null, $token);
@@ -268,6 +279,25 @@ test('POST /auth/logout', function() use ($base, $token) {
 
 test('Token invalid after logout', function() use ($base, $token) {
     $r = api('GET', "{$base}/auth/me", null, $token);
+    return $r['code'] === 401 ? true : "Code {$r['code']} (expected 401)";
+});
+
+echo "\n--- Auth Account Deletion ---\n";
+$delEmail = "smoke-delete-" . time() . "@test.com";
+$delToken = api('POST', "{$base}/auth/register", ['name' => 'DeleteMe', 'email' => $delEmail, 'password' => 'Test123456'])['body']['data']['token'] ?? '';
+
+test('DELETE /auth/me with correct password', function() use ($base, $delToken) {
+    $r = api('DELETE', "{$base}/auth/me", ['password' => 'Test123456'], $delToken);
+    return $r['code'] === 200 ? true : "Code {$r['code']}: " . json_encode($r['body']);
+});
+
+test('Token invalid after account deletion', function() use ($base, $delToken) {
+    $r = api('GET', "{$base}/auth/me", null, $delToken);
+    return $r['code'] === 401 ? true : "Code {$r['code']} (expected 401)";
+});
+
+test('Cannot login after account deletion', function() use ($base, $delEmail) {
+    $r = api('POST', "{$base}/auth/login", ['email' => $delEmail, 'password' => 'Test123456']);
     return $r['code'] === 401 ? true : "Code {$r['code']} (expected 401)";
 });
 
