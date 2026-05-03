@@ -25,7 +25,7 @@ _BLOCKED_IP_PATTERNS = [
     re.compile(r"^192\.168\.\d+\.\d+$"),
     re.compile(r"^0\.0\.0\.0$"),
     re.compile(r"^localhost$", re.IGNORECASE),
-    re.compile(r"^\[::1\]$"),
+    re.compile(r"^\[?::1\]?$"),  # IPv6 localhost (bracketed or not)
 ]
 
 

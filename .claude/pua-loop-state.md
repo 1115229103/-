@@ -8,7 +8,7 @@ target: "交付可直接上线的完整 AIStory 项目：前端(React+Vue)、后
 
 # PUA Loop State — AIStory 全栈交付
 
-## Current Iteration: 71
+## Current Iteration: 72
 
 ## Verify Command
 All six test suites must pass with 0 failures:
@@ -20,7 +20,7 @@ All six test suites must pass with 0 failures:
 - ux_quality_audit.php (39 tests, exit 0)
 
 ## Oracle Rules
-1. ✅ All 6 test files return exit code 0 (193 tests, 0 failures, 0 warnings)
+1. ✅ All 7 test suites return exit code 0 (227 tests: 193 PHP + 34 Python, 0 failures)
 2. ✅ Frontend scaffolded and buildable (admin 193KB + user 300KB)
 3. ✅ Queue worker config exists (deploy/supervisor.conf + docker/supervisor.conf)
 4. ✅ Git repo — 51+ commits, clean tree
@@ -777,4 +777,36 @@ creation and proper UTF-8 charset.
 - **Total: 193 tests, 0 failures, 0 warnings**
 - 78 commits, clean tree (after commit)
 
-## Status: ALL 7 ORACLE RULES SATISFIED — 193 TESTS GREEN, 0 WARNINGS
+## Iteration 72 — FastAPI Test Suite + SSRF Bug Fix (+373/-0 lines, 2 files)
+
+### Approach: First Python test suite — fundamentally different
+All 24 prior iterations focused exclusively on PHP/Laravel. This is the
+first Python test suite for the FastAPI AI Gateway. 34 unit tests across
+5 test classes covering the most critical security and correctness paths.
+
+### Bug Found: IPv6 SSRF Bypass
+SSRF protection pattern `^\[::1\]$` never matched because Python's
+`urlparse()` strips brackets from IPv6 addresses. `http://[::1]:8000`
+parses to hostname `::1` (no brackets), bypassing the block. Fixed
+pattern to `^\[?::1\]?$` to handle both forms.
+
+### Test Coverage (34 tests, 0 failures)
+| Class | Tests | What It Covers |
+|-------|-------|----------------|
+| TestKeyService | 13 | DEK gen, wrap/unwrap, encrypt/decrypt, full round-trip, tamper detection, Unicode keys, long keys |
+| TestSSRFProtection | 10 | Blocks 127/10/172.16/192.168/0.0.0.0/localhost/::1; allows api.openai.com etc. |
+| TestSchemas | 6 | Pydantic SSRF validation on StageRunRequest + KeyVerifyRequest |
+| TestConfig | 4 | Settings load, db_url format, MASTER_KEK + INTERNAL_API_TOKEN configured |
+| TestInternalAuth | 3 | Correct token passes, wrong/empty tokens raise 403 |
+
+### Changes
+- **fastapi/tests/test_fastapi.py** — NEW, 373 lines, 34 unit tests
+- **fastapi/app/routers/internal.py** — fixed IPv6 SSRF pattern
+
+### Build & Test Results
+- PHP: 32+24+33+24+41+39 = 193 passed, 0 failed
+- **Python: 34 passed, 0 failed (NEW)**
+- **Total: 227 tests, 0 failures, 0 warnings**
+- FastAPI restarted with SSRF fix applied
+
+## Status: ALL 7 ORACLE RULES SATISFIED — 227 TESTS GREEN, 0 WARNINGS
