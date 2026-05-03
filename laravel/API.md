@@ -1,256 +1,312 @@
 # AIStory API 文档
 
-## 基础信息
+Base URL: `http://127.0.0.1:8000/api/v1`
 
-- **Base URL**: `http://localhost:8000/api/v1`
-- **鉴权方式**: Bearer Token (Laravel Sanctum)
-- **Content-Type**: `application/json` (GET 除外)
-- **限流**: 公开端点 30次/分钟（访客），认证端点 120次/分钟（用户）
+## 认证
+
+所有需认证的端点使用 Bearer Token (Laravel Sanctum):
+
+```
+Authorization: Bearer <token>
+```
+
+Token 通过 `/auth/register` 或 `/auth/login` 获取。
 
 ---
 
-## 一、公开端点（无需 Token）
+## 公开端点
 
-### 认证
+### GET /health
+健康检查。返回服务状态和版本。
 
-| 方法 | 路径 | 说明 |
+响应 200: `{status, service, version, timestamp}`
+
+### POST /auth/register
+注册新用户。
+
+| 参数 | 类型 | 必填 |
 |------|------|------|
-| POST | `/auth/register` | 用户注册 |
-| POST | `/auth/login` | 用户登录（返回 token） |
+| name | string | 是 |
+| email | string | 是 |
+| password | string | 是 (min:8) |
+| password_confirmation | string | 是 |
 
-**POST /auth/register**
-```json
-{ "name": "用户名", "email": "user@example.com", "password": "password", "password_confirmation": "password" }
-```
-**Response**: `{ "data": { "user": {...}, "token": "..." } }`
+响应 201: `{data: {token, user: {id, name, email, role, created_at}}}`
 
-**POST /auth/login**
-```json
-{ "email": "user@example.com", "password": "password" }
-```
-**Response**: `{ "data": { "user": {...}, "token": "..." } }`
+### POST /auth/login
+登录获取 Token。
 
-### 模型浏览
-
-| 方法 | 路径 | 说明 |
+| 参数 | 类型 | 必填 |
 |------|------|------|
-| GET | `/models/categories` | 获取所有环节类别（10个） |
-| GET | `/models` | 获取模型列表 |
-| GET | `/models?category=llm` | 按类别筛选模型 |
+| email | string | 是 |
+| password | string | 是 |
+
+响应 200: `{data: {token, user: {id, name, email, role, created_at}}}`
+
+### POST /auth/forgot-password
+发送密码重置链接。
+
+| 参数 | 类型 | 必填 |
+|------|------|------|
+| email | string | 是 |
+
+### POST /auth/reset-password
+重置密码。
+
+| 参数 | 类型 | 必填 |
+|------|------|------|
+| email | string | 是 |
+| token | string | 是 |
+| password | string | 是 (min:8) |
+| password_confirmation | string | 是 |
+
+### GET /models
+列出所有可用 AI 模型。可选 `?category=llm` 筛选。
+
+响应 200: `{data: [{id, category, model_name, display_name, provider, api_type, status}]}`
+
+### GET /models/categories
+列出所有模型类别及其数量。
+
+响应 200: `{data: [{category, count, label}]}`
+
+### GET /plans
+列出所有会员方案。
+
+响应 200: `{data: [{id, name, slug, tier, price_monthly_cny, price_yearly_cny, features}]}`
 
 ---
 
-## 二、用户认证端点（需要 Token）
+## 需认证端点
 
-Header: `Authorization: Bearer {token}`
+Header: `Authorization: Bearer <token>`
 
-### 用户信息
+### GET /auth/me
+获取当前用户信息。
 
-| 方法 | 路径 | 说明 |
+响应 200: `{data: {id, name, email, role, created_at}}`
+
+### POST /auth/logout
+撤销当前 Token。Token 立即失效。
+
+### POST /auth/change-password
+修改密码。
+
+| 参数 | 类型 | 必填 |
 |------|------|------|
-| GET | `/auth/me` | 获取当前用户信息 |
-| POST | `/auth/logout` | 退出登录（Token 失效） |
-
-### 模型配置 (BYOK)
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/user/model-configs` | 获取已配置的模型列表 |
-| POST | `/user/model-configs` | 添加模型+Key 配置 |
-| PUT | `/user/model-configs/{id}` | 更新配置 |
-| DELETE | `/user/model-configs/{id}` | 删除配置 |
-| POST | `/user/model-configs/{id}/verify` | 校验 Key 有效性 |
-
-**POST /user/model-configs**
-```json
-{ "model_registry_id": 1, "category": "llm", "stage": "script_analysis", "api_key": "sk-xxx", "priority": 0 }
-```
-
-### 作品管理
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/works` | 作品列表（当前用户） |
-| POST | `/works` | 创建作品 |
-| GET | `/works/{id}` | 作品详情（含角色/场景/分镜等） |
-| PUT | `/works/{id}` | 更新作品 |
-| DELETE | `/works/{id}` | 删除作品 |
-
-**POST /works**
-```json
-{ "title": "作品标题", "style": "写实", "target_duration_sec": 60 }
-```
-
-### 管道控制
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/works/{id}/pipeline/start` | 启动 12 阶段 AI 管道 |
-| GET | `/works/{id}/pipeline/progress` | 获取管道进度（轮询用） |
-
-### 会员 & 支付
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/plans` | 套餐列表 |
-| GET | `/membership` | 当前用户的会员信息 |
-| POST | `/orders` | 创建订单 |
+| current_password | string | 是 |
+| new_password | string | 是 (min:8) |
+| new_password_confirmation | string | 是 |
 
 ---
 
-## 三、管理后台 API
+## 用户模型配置 (API Keys)
 
-前缀: `/api/v1/admin` | 需要: `auth:sanctum` + admin 角色
+用户自持 API Key，FastAPI 内存解密后调用外部 AI 服务。
 
-### 仪表盘
+### GET /user/model-configs
+列出当前用户的所有模型配置。API Key 已脱敏。
 
-| 方法 | 路径 | 说明 |
+### POST /user/model-configs
+添加模型配置（绑定自己的 API Key）。
+
+| 参数 | 类型 | 必填 |
 |------|------|------|
-| GET | `/admin/dashboard` | 数据概览（用户数/作品数/模型数/今日订单） |
+| model_registry_id | int | 是 |
+| stage | string | 是 |
+| api_key | string | 是 |
+| priority | int | 否 |
 
-### 模型注册
+### PUT /user/model-configs/{id}
+更新模型配置。
 
-| 方法 | 路径 | 说明 |
+### DELETE /user/model-configs/{id}
+删除模型配置。
+
+### POST /user/model-configs/{id}/verify
+验证 API Key 是否可用（通过 FastAPI 实际调用测试）。
+
+---
+
+## 作品 (Works)
+
+### GET /works
+列出当前用户的所有作品。
+
+### POST /works
+创建作品。
+
+| 参数 | 类型 | 必填 |
 |------|------|------|
-| GET | `/admin/models` | 模型列表 |
-| POST | `/admin/models` | 添加模型 |
-| PUT | `/admin/models/{id}` | 编辑模型 |
-| DELETE | `/admin/models/{id}` | 删除模型 |
-| PUT | `/admin/models/{id}/status` | 启用/禁用模型 |
-| PUT | `/admin/models/sort` | 调整排序 |
+| title | string | 是 (max:128) |
+| style | string | 否 |
+| duration | int | 否 (1-3600) |
+| description | text | 否 |
 
-### 管道配置
+### GET /works/{id}
+获取单个作品详情。仅作品所有者可访问。
 
-| 方法 | 路径 | 说明 |
+### PUT /works/{id}
+更新作品信息。
+
+### DELETE /works/{id}
+删除作品。
+
+### GET /works/{id}/pipeline/progress
+查询作品在 12 环节 AI 管道中的进度。
+
+### POST /works/{id}/pipeline/start
+启动管道执行（异步队列处理）。
+
+---
+
+## 会员与订单
+
+### GET /membership
+获取当前会员方案和状态。
+
+### POST /orders
+创建订阅订单。
+
+| 参数 | 类型 | 必填 |
 |------|------|------|
-| GET | `/admin/pipeline-stages` | 12 阶段配置列表 |
-| PUT | `/admin/pipeline-stages/{stage}` | 更新阶段配置 |
+| plan_id | int | 是 |
+| billing_cycle | string | 否 (monthly/yearly) |
+
+---
+
+## 管理端 API
+
+所有管理端点需 admin 角色。前缀: `/api/v1/admin`
+
+### Dashboard
+- `GET /admin/dashboard` — 仪表盘概览
+
+### 模型管理
+- `GET    /admin/models` — 模型注册表列表 (分页)
+- `POST   /admin/models` — 添加新模型
+- `PUT    /admin/models/{id}` — 编辑模型
+- `DELETE /admin/models/{id}` — 删除模型
+- `PUT    /admin/models/{id}/status` — 切换启用/禁用
+- `PUT    /admin/models/sort` — 批量排序
+
+### 管道阶段
+- `GET /admin/pipeline-stages` — 12 阶段列表
+- `PUT /admin/pipeline-stages/{stage}` — 更新阶段配置
 
 ### 提示词模板
+- `GET /admin/prompt-templates` — 阶段模板列表
+- `PUT /admin/prompt-templates/{stage}` — 更新模板提示词
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/admin/prompt-templates` | 提示词模板列表 |
-| PUT | `/admin/prompt-templates/{stage}` | 更新某阶段提示词 |
+### 视觉风格
+- `GET    /admin/visual-styles` — 列表
+- `POST   /admin/visual-styles` — 创建
+- `PUT    /admin/visual-styles/{id}` — 更新
+- `DELETE /admin/visual-styles/{id}` — 删除
 
-### 风格预设
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/admin/visual-styles` | 风格列表 |
-| POST | `/admin/visual-styles` | 添加风格 |
-| PUT | `/admin/visual-styles/{id}` | 编辑风格 |
-| DELETE | `/admin/visual-styles/{id}` | 删除风格 |
-
-### 音色库
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/admin/voice-library` | 音色列表 |
-| POST | `/admin/voice-library` | 添加音色 |
-| PUT | `/admin/voice-library/{id}` | 编辑音色 |
-| DELETE | `/admin/voice-library/{id}` | 删除音色 |
+### 语音库
+- `GET    /admin/voice-library` — 列表
+- `POST   /admin/voice-library` — 创建
+- `PUT    /admin/voice-library/{id}` — 更新
+- `DELETE /admin/voice-library/{id}` — 删除
 
 ### 动作模板
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/admin/action-templates` | 动作模板列表 |
-| POST | `/admin/action-templates` | 添加动作模板 |
-| PUT | `/admin/action-templates/{id}` | 编辑动作模板 |
-| DELETE | `/admin/action-templates/{id}` | 删除动作模板 |
+- `GET    /admin/action-templates` — 列表
+- `POST   /admin/action-templates` — 创建
+- `PUT    /admin/action-templates/{id}` — 更新
+- `DELETE /admin/action-templates/{id}` — 删除
 
 ### 水印配置
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/admin/watermark-config` | 水印配置详情 |
-| PUT | `/admin/watermark-config` | 更新水印配置 |
+- `GET /admin/watermark-config` — 查看水印配置
+- `PUT /admin/watermark-config` — 更新 (文本水印/图像水印/盲水印)
 
 ### 用户管理
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/admin/users` | 用户列表（分页） |
-| GET | `/admin/users/{id}` | 用户详情 |
+- `GET /admin/users` — 用户列表 (分页)
+- `GET /admin/users/{id}` — 用户详情
 
 ### 内容管理
+- `GET    /admin/works` — 作品列表
+- `GET    /admin/works/{id}` — 作品详情
+- `DELETE /admin/works/{id}` — 删除作品
+- `GET    /admin/sensitive-words` — 敏感词列表
+- `POST   /admin/sensitive-words` — 添加
+- `PUT    /admin/sensitive-words/{id}` — 更新
+- `DELETE /admin/sensitive-words/{id}` — 删除
+- `GET    /admin/banners` — Banner 列表
+- `POST   /admin/banners` — 创建
+- `PUT    /admin/banners/{id}` — 更新
+- `DELETE /admin/banners/{id}` — 删除
+- `GET    /admin/templates` — 模板列表
+- `POST   /admin/templates` — 创建
+- `PUT    /admin/templates/{id}` — 更新
+- `DELETE /admin/templates/{id}` — 删除
+- `GET    /admin/assets` — 资源列表
+- `POST   /admin/assets` — 上传
+- `PUT    /admin/assets/{id}` — 更新
+- `DELETE /admin/assets/{id}` — 删除
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/admin/works` | 全部作品列表 |
-| GET | `/admin/works/{id}` | 作品详情 |
-| DELETE | `/admin/works/{id}` | 删除作品 |
-| GET | `/admin/sensitive-words` | 敏感词列表 |
-| POST | `/admin/sensitive-words` | 添加敏感词 |
-| PUT | `/admin/sensitive-words/{id}` | 编辑敏感词 |
-| DELETE | `/admin/sensitive-words/{id}` | 删除敏感词 |
+### 审核
+- `GET /admin/review/works` — 待审核作品
+- `PUT /admin/review/works/{id}/approve` — 审核通过
+- `PUT /admin/review/works/{id}/reject` — 审核拒绝
 
-### 运营管理
+### 财务
+- `GET /admin/orders` — 订单列表
+- `GET /admin/finance/report` — 财务报表
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET/POST/PUT/DELETE | `/admin/banners` | Banner CRUD |
-| GET/POST/PUT/DELETE | `/admin/templates` | 文案模板 CRUD |
-| GET/POST/PUT/DELETE | `/admin/assets` | 素材库 CRUD (BGM/音效/图片) |
+### 方案管理
+- `GET    /admin/plans` — 方案列表
+- `POST   /admin/plans` — 创建方案
+- `PUT    /admin/plans/{id}` — 更新方案
+- `DELETE /admin/plans/{id}` — 删除方案
+- `PUT    /admin/plans/{id}/status` — 切换启用
 
-### 财务管理
+### 角色权限
+- `GET /admin/roles` — 角色列表
+- `PUT /admin/roles/{id}` — 更新角色权限
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/admin/orders` | 订单列表 |
-| GET | `/admin/finance/report` | 财务报表 |
-
-### 系统管理
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/admin/system/settings` | 系统设置 |
-| PUT | `/admin/system/settings` | 更新系统设置 |
-| GET | `/admin/system/operation-logs` | 操作日志 |
-| GET | `/admin/system/backups` | 备份记录 |
-| POST | `/admin/system/backups` | 创建备份 |
+### 系统
+- `GET  /admin/system/settings` — 系统设置 (KV)
+- `PUT  /admin/system/settings` — 更新设置
+- `GET  /admin/system/operation-logs` — 操作日志 (分页)
+- `GET  /admin/system/backups` — 备份列表
+- `POST /admin/system/backups` — 创建备份
 
 ---
 
-## 四、FastAPI AI 编排服务
+## 限流
 
-内部服务，端口独立（不在公开 API 中暴露）
+| 用户类型 | 速率 |
+|----------|------|
+| 访客 | 30 req/min |
+| 认证用户 | 120 req/min |
+| 管理员 | 120 req/min |
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/` | 服务状态 |
-| GET | `/health` | 健康检查 |
-| POST | `/generate-dek` | 生成用户数据密钥（信封加密） |
+超出限制返回 `429 Too Many Requests`:
 
----
-
-## 五、通用约定
-
-### 响应格式
-所有端点返回统一格式:
 ```json
-{ "data": {...} }
-```
-列表返回:
-```json
-{ "data": [...] }
-```
-分页返回:
-```json
-{ "data": [...], "meta": { "current_page": 1, "total": 100 } }
+{
+  "error": "Too Many Requests",
+  "message": "Rate limit exceeded. Try again in N seconds."
+}
 ```
 
-### 错误响应
+## 错误格式
+
+所有错误返回统一 JSON 结构:
+
 ```json
-{ "message": "错误描述", "errors": { "field": ["错误信息"] } }
+{
+  "error": "简短描述",
+  "message": "详细消息",
+  "errors": {
+    "field_name": ["验证错误1", "验证错误2"]
+  }
+}
 ```
 
-### HTTP 状态码
-- `200` — 成功
-- `201` — 创建成功
-- `401` — 未认证（Token 缺失或失效）
-- `403` — 无权限（非 admin 访问管理端点）
-- `422` — 参数校验失败
-- `429` — 触发限流
-- `500` — 服务器错误
+HTTP 状态码: 200 成功 | 201 已创建 | 204 无内容 | 401 未认证 | 403 无权限 | 404 不存在 | 422 验证失败 | 429 请求过多 | 500 服务端错误
+
+## OpenAPI 规范
+
+机器可读的 OpenAPI 3.0.3 规范文件: `public/openapi.json` (728 lines)

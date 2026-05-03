@@ -97,8 +97,8 @@ npm run build
 cd laravel
 php artisan serve
 
-# 启动队列 Worker
-php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+# 启动队列 Worker (database driver)
+php artisan queue:work database --sleep=3 --tries=3 --max-time=3600
 
 # 启动 FastAPI (另一个终端)
 cd fastapi
@@ -114,12 +114,36 @@ uvicorn app.main:app --host 127.0.0.1 --port 8001
 
 ```bash
 # API Smoke Tests (~10s)
-php tests/api_smoke.php          # 24 tests
+php tests/api_smoke.php          # 32 tests
 php tests/admin_api_smoke.php    # 22 tests
 
 # E2E 综合测试 (~30s)
-php tests/e2e.php                # 30+ tests
+php tests/e2e.php                # 33 tests
+
+# 用户旅程模拟 (~15s)
+php tests/user_journey.php       # 24 tests
 ```
+
+## Docker 部署
+
+```bash
+# 1. 配置环境变量
+cp laravel/.env.example laravel/.env
+# 编辑 .env — 设置 MASTER_KEK, FASTAPI_INTERNAL_TOKEN, DB_PASSWORD
+
+# 2. 构建并启动
+cd docker
+docker compose up -d --build
+
+# 3. 初始化数据库
+docker exec aistory-laravel php artisan migrate --seed
+
+# 4. 构建前端 (在宿主机)
+cd admin-app && npm run build
+cd user-app && npm run build
+```
+
+服务端口: Laravel :80 | FastAPI :8001 | MySQL :3306 | Redis :6379
 
 ## 生产部署
 
@@ -130,6 +154,8 @@ php tests/e2e.php                # 30+ tests
 | `nginx.conf` | Nginx HTTPS 配置 (含安全头、静态缓存、文件保护) |
 | `supervisor.conf` | 队列 Worker 守护 (2 workers、重试、日志) |
 | `.env.production.example` | 生产环境变量模板 |
+
+Docker Compose 配置: `docker/docker-compose.yml` (4 services: MySQL, Redis, Laravel+Nginx, FastAPI)
 
 ### 关键安全配置
 
