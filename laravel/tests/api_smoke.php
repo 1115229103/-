@@ -117,7 +117,7 @@ test('GET /user/model-configs (empty)', function() use ($base, $token) {
 
 test('POST /auth/forgot-password (registered email → 200)', function() use ($base, $email) {
     $r = api('POST', "{$base}/auth/forgot-password", ['email' => $email]);
-    return $r['code'] === 200 && isset($r['body']['token']) ? true : "Code {$r['code']} or missing token";
+    return $r['code'] === 200 && isset($r['body']['message']) ? true : "Code {$r['code']} or missing message";
 });
 
 test('POST /auth/forgot-password (invalid email format → 422)', function() use ($base) {

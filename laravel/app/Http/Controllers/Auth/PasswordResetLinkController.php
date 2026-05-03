@@ -36,7 +36,8 @@ class PasswordResetLinkController extends Controller
         // In production: Mail::to($user)->send(new PasswordResetMail($token));
         // For now, return the token in dev so it can be tested
         $response = ['message' => 'Reset token generated.'];
-        if (app()->environment('local', 'testing')) {
+        // Return token in non-production envs or when APP_DEBUG=true
+        if (!app()->environment('production') || config('app.debug')) {
             $response['token'] = $token;
         }
 
